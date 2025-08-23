@@ -1,8 +1,8 @@
-﻿using ElevatorControlSystem.Models;
+﻿using ElevatorSystem.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ElevatorControlSystem.Controllers;
+namespace ElevatorSystem.Controllers;
 
 /// <summary>
 /// POST http://{hostname}:{port}/api/elevator

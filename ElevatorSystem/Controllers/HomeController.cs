@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using ElevatorControlSystem.Models;
+using ElevatorSystem.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ElevatorControlSystem.Controllers
+namespace ElevatorSystem.Controllers
 {
     public class HomeController : Controller
     {

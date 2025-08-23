@@ -1,4 +1,4 @@
-namespace ElevatorControlSystem.Models
+namespace ElevatorSystem.Models
 {
     public class ErrorViewModel
     {
