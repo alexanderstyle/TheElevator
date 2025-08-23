@@ -64,4 +64,51 @@ public class ElevatorTest
         // The pending queue should be empty after assignment
         Assert.Empty(manager.GetPendingRequests());
     }
+
+    [Fact]
+    public void Step_MovesElevatorOneFloorTowardTarget()
+    {
+        // Arrange
+        var manager = new ElevatorManager(floors: 10, elevatorCount: 1);
+        var request = new ElevatorRequest(5, Direction.Up);
+        manager.ReceiveRequest(request);
+        manager.AssignRequests();
+
+        var elevator = manager.GetElevators().Single();
+        Assert.Equal(1, elevator.CurrentFloor); // starts at floor 1
+        Assert.Contains(5, elevator.TargetFloors);
+
+        // Act - move one step
+        manager.Step();
+        elevator = manager.GetElevators().Single();
+
+        // Assert
+        Assert.Equal(2, elevator.CurrentFloor); // moved up one floor
+        Assert.Contains(5, elevator.TargetFloors); // still going to 5
+    }
+
+    [Fact]
+    public void Step_RemovesTargetWhenArrived()
+    {
+        // Arrange
+        var manager = new ElevatorManager(floors: 10, elevatorCount: 1);
+        var request = new ElevatorRequest(2, Direction.Up);
+        manager.ReceiveRequest(request);
+        manager.AssignRequests();
+
+        var elevator = manager.GetElevators().Single();
+        elevator.CurrentFloor = 1;
+
+        // Act - move one step to floor 2
+        manager.Step(); // Should move from 1 to 2
+        elevator = manager.GetElevators().Single();
+
+        Assert.Equal(2, elevator.CurrentFloor);
+
+        // Next step should "arrive" and dequeue the target floor
+        manager.Step();
+        elevator = manager.GetElevators().Single();
+        Assert.Empty(elevator.TargetFloors);
+        Assert.Null(elevator.Direction);
+    }
 }

@@ -122,6 +122,14 @@ public class ElevatorManager
     {
         lock (_lock)
         {
+            //return _elevators.Select(e => new Elevator(e.Id)
+            //{
+            //    CurrentFloor = e.CurrentFloor,
+            //    Direction = e.Direction,
+            //    TargetFloors = new Queue<int>(e.TargetFloors)
+            //}).ToList();
+
+            // Get a copy of elevators to avoid external mutation.
             return _elevators.Select(e => new Elevator(e)).ToList();
         }
     }

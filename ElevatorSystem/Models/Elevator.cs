@@ -14,11 +14,15 @@ public class Elevator
         Id = id;
     }
 
+    /// <summary>
+    /// Copy constructor. Useful for copying objects without mutating the original.
+    /// </summary>
+    /// <param name="other"></param>
     public Elevator(Elevator other)
     {
         Id = other.Id;
         CurrentFloor = other.CurrentFloor;
         Direction = other.Direction;
-        TargetFloors = new Queue<int>(other.TargetFloors); // Creates a new queue with same contents.
+        TargetFloors = new Queue<int>(other.TargetFloors);
     }
 }
