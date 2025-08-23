@@ -1,4 +1,4 @@
-using ElevatorSystem.Models;
+using ElevatorSystem.Services;
 
 namespace ElevatorSystem;
 
@@ -19,7 +19,12 @@ public class Program
 
         // Add services to the container.
         builder.Services.AddControllersWithViews();
+
+        // Our singleton ElevatorManager instance manages all elevator state and logic (the brain).
         builder.Services.AddSingleton<ElevatorManager>();
+
+        // We need a background service to run our elevator simulation logic.
+        builder.Services.AddHostedService<ElevatorBackgroundService>();
 
         var app = builder.Build();
 

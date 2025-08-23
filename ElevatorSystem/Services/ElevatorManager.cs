@@ -1,7 +1,46 @@
-﻿using System.Linq;
+﻿using ElevatorSystem.Models;
+using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
-namespace ElevatorSystem.Models;
+namespace ElevatorSystem.Services;
 
+/// <summary>
+/// 
+/// </summary>
+//User/SS           ElevatorSystem API      ElevatorManager     Timer
+//   |                   |                       |                |
+//   |  POST /request    |                       |                |
+//   |------------------>|                       |                |
+//   |                   |  .ReceiveRequest(req) |                |
+//   |                   |---------------------->|                |
+//   |                   |                       |   Add req to   |
+//   |                   |                       |   pending queue|
+//   |                   |      200 OK           |                |
+//   |<------------------|                       |                |
+//   |                   |                       |                |
+//=== Timer fires(tick) =========================================|
+//   |                   |        (AssignRequests)                |
+//   |                   |--------------------------------------->|
+//   |                   |                       | Assign request |
+//   |                   |                       | to elevator    |
+//   |                   |<---------------------------------------|
+//   |                   |      (Step)             |              |
+//   |                   |--------------------------------------->|
+//   |                   |                       | Move elevator  |
+//   |                   |                       | (advance/dequeue)
+//   |                   |<---------------------------------------|
+//=== Repeat ===================================                  |
+//
+//
+//API receives elevator request
+//   |
+//ElevatorManager.ReceiveRequest(added to queue)
+//   |
+//ElevatorSimulationService tick:
+//    -> AssignRequests(assign queued requests)
+//    -> Step(move elevators)
+//    -> Wait for next tick
+//(repeats forever)
 public class ElevatorManager
 {
     private readonly int _floors;
@@ -31,7 +70,8 @@ public class ElevatorManager
     }
 
     /// <summary>
-    /// Assign requests to elevators (very simple algorithm)
+    /// Assign requests to elevators.
+    /// More efficient to call this periodically (e.g. every second) like inside a timer or background task.
     /// </summary>
     public void AssignRequests()
     {
@@ -44,9 +84,9 @@ public class ElevatorManager
                 // Find all elevators that are idle or heading in request.Direction (and will pass the floor)
                 var candidates = _elevators.Where(e =>
                     e.IsIdle ||
-                    (e.Direction == request.Direction &&
-                        ((request.Direction == Direction.Up && e.CurrentFloor <= request.Floor) ||
-                         (request.Direction == Direction.Down && e.CurrentFloor >= request.Floor)))
+                    e.Direction == request.Direction &&
+                        (request.Direction == Direction.Up && e.CurrentFloor <= request.Floor ||
+                         request.Direction == Direction.Down && e.CurrentFloor >= request.Floor)
                 ).ToList();
 
                 if (candidates.Any())
@@ -74,7 +114,7 @@ public class ElevatorManager
     }
 
     /// <summary>
-    /// Move all elevators one step
+    /// Move all elevators one step (NOTE: 1 step = 1 floor).
     /// Call this on a timer or "tick" (from a background process/service)
     /// </summary>
     public void Step()
