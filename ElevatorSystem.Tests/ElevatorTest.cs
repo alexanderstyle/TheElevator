@@ -16,7 +16,7 @@ public class ElevatorTest
     {
         // Arrange
         var manager = new ElevatorManager(_mockLogger.Object);
-        var request = new ElevatorRequest(5, Direction.Up);
+        var request = new ElevatorRequest(5, Direction.Down);
 
         // Act
         manager.ReceiveRequest(request);
@@ -25,7 +25,7 @@ public class ElevatorTest
         // Assert
         Assert.Single(pending);
         Assert.Equal(5, pending[0].Floor);
-        Assert.Equal(Direction.Up, pending[0].Direction);
+        Assert.Equal(Direction.Down, pending[0].Direction);
     }
 
     [Fact]
@@ -33,8 +33,8 @@ public class ElevatorTest
     {
         // Arrange
         var manager = new ElevatorManager(_mockLogger.Object);
-        var req1 = new ElevatorRequest(2, Direction.Up);
-        var req2 = new ElevatorRequest(7, Direction.Down);
+        var req1 = new ElevatorRequest(7, Direction.Down);
+        var req2 = new ElevatorRequest(2, Direction.Up);
 
         // Act
         manager.ReceiveRequest(req1);
@@ -44,16 +44,43 @@ public class ElevatorTest
 
         // Assert
         Assert.Equal(2, pending.Count);
-        Assert.Equal(2, pending[0].Floor);        // FIFO order check
-        Assert.Equal(7, pending[1].Floor);
+        Assert.Equal(7, pending[0].Floor);        // FIFO order check
+        Assert.Equal(2, pending[1].Floor);
+        Assert.Equal(Direction.Down, pending[0].Direction);
+        Assert.Equal(Direction.Up, pending[1].Direction);
     }
+
+    // TODO: Handle duplicate requests better (e.g. ignore if same floor and direction already queued).
+    //[Fact]
+    //public void ReceiveRequest_MultipleRequestsButSameAreQueuedOnlyOnce()
+    //{
+    //    // Arrange
+    //    var manager = new ElevatorManager(_mockLogger.Object);
+    //    var req1 = new ElevatorRequest(7, Direction.Down);
+    //    var req2 = new ElevatorRequest(7, Direction.Down);
+    //    var req3 = new ElevatorRequest(7, Direction.Up);
+
+    //    // Act
+    //    manager.ReceiveRequest(req1);
+    //    manager.ReceiveRequest(req2);
+    //    manager.ReceiveRequest(req3);
+
+    //    var pending = manager.GetPendingRequests();
+
+    //    // Assert
+    //    Assert.Equal(2, pending.Count);
+    //    Assert.Equal(7, pending[0].Floor);        // FIFO order check
+    //    Assert.Equal(2, pending[1].Floor);
+    //    Assert.Equal(Direction.Down, pending[0].Direction);
+    //    Assert.Equal(Direction.Up, pending[1].Direction);
+    //}
 
     [Fact]
     public void AssignRequests_AssignsRequestToElevatorAndClearsPending()
     {
         // Arrange
         var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-        var request = new ElevatorRequest(5, Direction.Up);
+        var request = new ElevatorRequest(5, Direction.Down);
 
         // Act
         manager.ReceiveRequest(request);

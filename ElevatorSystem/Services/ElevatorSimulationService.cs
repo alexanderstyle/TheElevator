@@ -1,4 +1,5 @@
 ﻿using ElevatorSystem.Controllers;
+using ElevatorSystem.Models;
 
 namespace ElevatorSystem.Services;
 
@@ -9,9 +10,9 @@ namespace ElevatorSystem.Services;
 /// <remarks>This service runs continuously in the background, invoking the <see
 /// cref="ElevatorManager.AssignRequests"/> method to assign pending requests and the <see cref="ElevatorManager.Step"/>
 /// method to move elevators at regular intervals. The interval between ticks is set to 10 seconds by default.</remarks>
-public class ElevatorBackgroundService : BackgroundService
+public class ElevatorSimulationService : BackgroundService
 {
-    private readonly ILogger<ElevatorBackgroundService> _logger;
+    private readonly ILogger<ElevatorSimulationService> _logger;
     private readonly ElevatorManager _manager;
 
     // Default interval, in seconds our elevator operations logic will fire.
@@ -20,19 +21,23 @@ public class ElevatorBackgroundService : BackgroundService
     // Tick interval, in seconds our elevator operations logic will fire.
     private readonly TimeSpan _tickInterval;
 
-    public ElevatorBackgroundService(ILogger<ElevatorBackgroundService> logger,
+    private readonly Random randomizer = new Random();
+    private readonly int _floorCount;
+
+    public ElevatorSimulationService(ILogger<ElevatorSimulationService> logger,
         ElevatorManager manager)
     {
         _logger = logger;
         _manager = manager;
         _tickInterval = TimeSpan.FromSeconds(_defaultTickIntervalSeconds);
+        _floorCount = 10; // TODO: Abstract this so it can be used from ElevatorManager.
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(_tickInterval);
+        using var elevatorTimer = new PeriodicTimer(_tickInterval);
 
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        while (await elevatorTimer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {

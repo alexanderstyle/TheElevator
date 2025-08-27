@@ -37,7 +37,7 @@ namespace ElevatorSystem.Services;
 //   |
 //ElevatorManager.ReceiveRequest(added to queue)
 //   |
-//ElevatorBackgroundService tick:
+//ElevatorSimulationService tick:
 //    -> AssignRequests(assign queued requests)
 //    -> Step(move elevators)
 //    -> Wait for next tick

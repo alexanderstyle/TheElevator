@@ -8,6 +8,7 @@ namespace ElevatorSystem.Controllers;
 /// <summary>
 /// POST http://{hostname}:{port}/api/elevator
 /// </summary>
+[Obsolete("APIs are no longer used. Simulations for generating elevator requests are done by background services.")]
 [Route("api/elevator")]
 [ApiController]
 public class ElevatorApiController : ControllerBase
