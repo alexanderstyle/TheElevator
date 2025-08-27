@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ElevatorSystem.Controllers;
 
 /// <summary>
+/// Auxiliary API controller to handle elevator requests from external clients (e.g., Simulation System).
+/// This is not stated in requirements but is provided for manual elevator requests via api requests.
 /// POST http://{hostname}:{port}/api/elevator
 /// </summary>
 [Obsolete("APIs are no longer used. Simulations for generating elevator requests are done by background services.")]

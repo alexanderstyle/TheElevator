@@ -3,6 +3,14 @@ using Microsoft.Extensions.Logging;
 
 namespace ElevatorSystem.Services;
 
+/// <summary>
+/// A background service that automatically generates elevator hall requests at random intervals.
+/// </summary>
+/// <remarks>This service simulates elevator hall requests by periodically generating requests for random floors
+/// and directions. The number of requests is limited by the <paramref name="maxRequests"/> parameter, and the floors
+/// are constrained by the <paramref name="floorCount"/> parameter. Requests are sent to the <see
+/// cref="ElevatorManager"/> for processing.  The service runs until the maximum number of requests is reached or the
+/// application is stopped.</remarks>
 public class ElevatorHallRequestGenerator : BackgroundService
 {
     private readonly ILogger<ElevatorHallRequestGenerator> _logger;

@@ -5,6 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ElevatorSystem.Controllers
 {
+    /// <summary>
+    /// Controller for handling home page (our elevator UI) and error views.
+    /// Although not required, since logging is in place and describes elevator operations,
+    /// I will enhance the UI to show elevator status and operations.
+    /// </summary>
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
