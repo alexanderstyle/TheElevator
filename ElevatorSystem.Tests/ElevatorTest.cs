@@ -50,31 +50,6 @@ public class ElevatorTest
         Assert.Equal(Direction.Up, pending[1].Direction);
     }
 
-    // TODO: Handle duplicate requests better (e.g. ignore if same floor and direction already queued).
-    //[Fact]
-    //public void ReceiveRequest_MultipleRequestsButSameAreQueuedOnlyOnce()
-    //{
-    //    // Arrange
-    //    var manager = new ElevatorManager(_mockLogger.Object);
-    //    var req1 = new ElevatorRequest(7, Direction.Down);
-    //    var req2 = new ElevatorRequest(7, Direction.Down);
-    //    var req3 = new ElevatorRequest(7, Direction.Up);
-
-    //    // Act
-    //    manager.ReceiveRequest(req1);
-    //    manager.ReceiveRequest(req2);
-    //    manager.ReceiveRequest(req3);
-
-    //    var pending = manager.GetPendingRequests();
-
-    //    // Assert
-    //    Assert.Equal(2, pending.Count);
-    //    Assert.Equal(7, pending[0].Floor);        // FIFO order check
-    //    Assert.Equal(2, pending[1].Floor);
-    //    Assert.Equal(Direction.Down, pending[0].Direction);
-    //    Assert.Equal(Direction.Up, pending[1].Direction);
-    //}
-
     [Fact]
     public void AssignRequests_AssignsRequestToElevatorAndClearsPending()
     {
