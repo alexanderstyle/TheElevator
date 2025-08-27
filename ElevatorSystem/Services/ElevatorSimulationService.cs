@@ -18,9 +18,6 @@ public class ElevatorSimulationService : BackgroundService
     // Default interval, in seconds our elevator operations logic will fire.
     private readonly long _defaultTickIntervalSeconds = 10;
 
-    // Tick interval, in seconds our elevator operations logic will fire.
-    private readonly TimeSpan _tickInterval;
-
     private readonly Random randomizer = new Random();
     private readonly int _floorCount;
 
@@ -29,13 +26,12 @@ public class ElevatorSimulationService : BackgroundService
     {
         _logger = logger;
         _manager = manager;
-        _tickInterval = TimeSpan.FromSeconds(_defaultTickIntervalSeconds);
         _floorCount = 10; // TODO: Abstract this so it can be used from ElevatorManager.
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var elevatorTimer = new PeriodicTimer(_tickInterval);
+        using var elevatorTimer = new PeriodicTimer(TimeSpan.FromSeconds(_defaultTickIntervalSeconds));
 
         while (await elevatorTimer.WaitForNextTickAsync(stoppingToken))
         {
@@ -44,8 +40,6 @@ public class ElevatorSimulationService : BackgroundService
                 _manager.AssignRequests();
 
                 _manager.Step();
-
-                _logger.LogInformation("Running scheduled task...");
             }
             catch (Exception ex)
             {
