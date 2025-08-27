@@ -1,16 +1,21 @@
-﻿using ElevatorSystem.Models;
+﻿using Castle.Core.Logging;
+using ElevatorSystem.Models;
 using ElevatorSystem.Services;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace ElevatorSystem.Tests;
 
 public class ElevatorTest
 {
+    private Mock<ILogger<ElevatorManager>> _mockLogger = new Mock<ILogger<ElevatorManager>>();
+
     [Fact]
     public void ReceiveRequest_AddsRequestToQueue()
     {
         // Arrange
-        var manager = new ElevatorManager();
+        var manager = new ElevatorManager(_mockLogger.Object);
         var request = new ElevatorRequest(5, Direction.Up);
 
         // Act
@@ -27,7 +32,7 @@ public class ElevatorTest
     public void ReceiveRequest_MultipleRequestsAreQueuedInOrder()
     {
         // Arrange
-        var manager = new ElevatorManager();
+        var manager = new ElevatorManager(_mockLogger.Object);
         var req1 = new ElevatorRequest(2, Direction.Up);
         var req2 = new ElevatorRequest(7, Direction.Down);
 
@@ -47,7 +52,7 @@ public class ElevatorTest
     public void AssignRequests_AssignsRequestToElevatorAndClearsPending()
     {
         // Arrange
-        var manager = new ElevatorManager(floors: 10, elevatorCount: 2);
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
         var request = new ElevatorRequest(5, Direction.Up);
 
         // Act
@@ -70,7 +75,7 @@ public class ElevatorTest
     public void Step_MovesElevatorOneFloorTowardTarget()
     {
         // Arrange
-        var manager = new ElevatorManager(floors: 10, elevatorCount: 1);
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 1);
         var request = new ElevatorRequest(5, Direction.Up);
         manager.ReceiveRequest(request);
         manager.AssignRequests();
@@ -92,7 +97,7 @@ public class ElevatorTest
     public void Step_RemovesTargetWhenArrived()
     {
         // Arrange
-        var manager = new ElevatorManager(floors: 10, elevatorCount: 1);
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 1);
         var request = new ElevatorRequest(2, Direction.Up);
         manager.ReceiveRequest(request);
         manager.AssignRequests();
@@ -111,5 +116,47 @@ public class ElevatorTest
         elevator = manager.GetElevators().Single();
         Assert.Empty(elevator.TargetFloors);
         Assert.Null(elevator.Direction);
+    }
+
+    [Fact]
+    public void Step_RemovesTargetWhenArrived_MultipleElevators()
+    {
+        // Arrange: 4 elevators, both at floor 1, requests for floor 2 and 3
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
+        var request1 = new ElevatorRequest(2, Direction.Up);
+        var request2 = new ElevatorRequest(3, Direction.Up);
+        manager.ReceiveRequest(request1);
+        manager.ReceiveRequest(request2);
+        manager.AssignRequests();
+
+        // Simulate steps until all targets are reached
+        var elevators = manager.GetElevators();
+
+        // Keep stepping until all elevators have no targets
+        int maxLoops = 10; // Prevent infinite loop in case of bug
+        int loops = 0;
+        while (elevators.Any(e => e.TargetFloors.Any()) && loops++ < maxLoops)
+        {
+            manager.Step();
+            elevators = manager.GetElevators();
+        }
+
+        // Assert: Each elevator at its assigned destination and target queue empty
+        foreach (var elevator in elevators)
+        {
+            // If elevator was assigned a floor, it should be there, and have no targets left
+            if (elevator.CurrentFloor == 2 || elevator.CurrentFloor == 3)
+            {
+                Assert.Empty(elevator.TargetFloors);
+                Assert.Null(elevator.Direction);
+            }
+            else
+            {
+                // Elevators not assigned a target should be idle on floor 1
+                Assert.Equal(1, elevator.CurrentFloor);
+                Assert.Empty(elevator.TargetFloors);
+                Assert.Null(elevator.Direction);
+            }
+        }
     }
 }

@@ -1,11 +1,12 @@
-﻿using ElevatorSystem.Models;
+﻿using ElevatorSystem.Controllers;
+using ElevatorSystem.Models;
 using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace ElevatorSystem.Services;
 
 /// <summary>
-/// 
+/// Our singleton ElevatorManager instance manages all elevator state and logic (the brain).
 /// </summary>
 //User/SS           ElevatorSystem API      ElevatorManager     Timer
 //   |                   |                       |                |
@@ -36,13 +37,15 @@ namespace ElevatorSystem.Services;
 //   |
 //ElevatorManager.ReceiveRequest(added to queue)
 //   |
-//ElevatorSimulationService tick:
+//ElevatorBackgroundService tick:
 //    -> AssignRequests(assign queued requests)
 //    -> Step(move elevators)
 //    -> Wait for next tick
 //(repeats forever)
 public class ElevatorManager
 {
+    private readonly ILogger<ElevatorManager> _logger;
+
     private readonly int _floors;
     private readonly int _elevatorCount;
 
@@ -51,8 +54,11 @@ public class ElevatorManager
 
     private readonly object _lock = new object();
 
-    public ElevatorManager(int floors = 10, int elevatorCount = 4)
+    public ElevatorManager(ILogger<ElevatorManager> logger, 
+        int floors = 10, 
+        int elevatorCount = 4)
     {
+        _logger = logger;
         _floors = floors;
         _elevatorCount = elevatorCount;
         _elevators = Enumerable.Range(1, elevatorCount).Select(i => new Elevator(i)).ToList();
@@ -66,6 +72,7 @@ public class ElevatorManager
         lock (_lock)
         {
             _pendingRequests.Enqueue(request);
+            _logger.LogInformation($"\"{request.Direction}\" request on floor {request.Floor} received.");
         }
     }
 
@@ -102,7 +109,10 @@ public class ElevatorManager
                     {
                         chosen.Direction = request.Floor > chosen.CurrentFloor ? Direction.Up : Direction.Down;
                     }
+
                     _pendingRequests.Dequeue();
+
+                    _logger.LogInformation($"Elevator {chosen.Id} assigned \"{request.Direction}\" request on floor {request.Floor} (currently at floor {chosen.CurrentFloor})");
                 }
                 else
                 {
@@ -134,7 +144,10 @@ public class ElevatorManager
                 if (elevator.CurrentFloor == target)
                 {
                     // Arrived at floor
+                    Console.WriteLine($"Elevator {elevator.Id} stopped at floor {target} for \"{(elevator.Direction == Direction.Up ? "Up" : "Down")}\" request.");
+
                     elevator.TargetFloors.Dequeue();
+
                     // Set new direction if any more stops
                     if (elevator.TargetFloors.Count > 0)
                     {
@@ -148,8 +161,13 @@ public class ElevatorManager
                 }
                 else
                 {
+                    // Before stepping up or down, check our current elevator floor for logging.
+                    var oldFloor = elevator.CurrentFloor;
+
                     elevator.Direction = target > elevator.CurrentFloor ? Direction.Up : Direction.Down;
                     elevator.CurrentFloor += elevator.Direction == Direction.Up ? 1 : -1;
+
+                    _logger.LogInformation($"Elevator {elevator.Id} moving {elevator.Direction} from floor {oldFloor} to {elevator.CurrentFloor}. Next stop: floor {target}");
                 }
             }
         }
