@@ -24,6 +24,7 @@ public class Program
 
         // We need a background service to run our elevator simulation logic.
         builder.Services.AddHostedService<ElevatorSimulationService>();
+        // We need a background service to run our simulated elevator requests from along the hall.
         builder.Services.AddHostedService<ElevatorHallRequestGenerator>();
 
         var app = builder.Build();

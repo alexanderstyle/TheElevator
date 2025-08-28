@@ -54,6 +54,8 @@ public class ElevatorManager
 
     private readonly object _lock = new object();
 
+    public int Floors => _floors;
+
     public ElevatorManager(ILogger<ElevatorManager> logger, 
         int floors = 10, 
         int elevatorCount = 4)

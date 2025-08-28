@@ -1,8 +1,87 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model ElevatorManagerViewModel
+@{
+    ViewBag.Title = "Elevator System Status";
+    Layout = null;
+    var elevatorCount = Model.Elevators.Count;
+    var floorList = Enumerable.Range(1, Model.Floors).OrderByDescending(f => f).ToList();
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Elevator System Status</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+    <div class="container my-4">
+        <h2 class="mb-4">Elevator System Status</h2>
+        <table class="table table-bordered table-striped table-hover text-center align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Floor</th>
+                    <th>Pending Requests</th>
+                    @foreach (var elevator in Model.Elevators)
+                    {
+                        <th>Elevator @elevator.Id</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var floor in floorList)
+                {
+                    <tr>
+                        <td><strong>@floor</strong></td>
+                        <td>
+                            @{
+                                // Find pending requests for this floor
+                                var floorRequests = Model.PendingRequests
+                                    .Where(r => r.Floor == floor)
+                                    .Select(r => r.Direction)
+                                    .Distinct()
+                                    .ToList();
+
+                                if (floorRequests.Contains("Up"))
+                                {
+                                    <span class="badge bg-primary mx-1">↑ Up</span>
+                                }
+                                if (floorRequests.Contains("Down"))
+                                {
+                                    <span class="badge bg-success mx-1">↓ Down</span>
+                                }
+                                if (!floorRequests.Any())
+                                {
+                                    <span class="text-muted">None</span>
+                                }
+                            }
+                        </td>
+                        @foreach (var elevator in Model.Elevators)
+                        {
+                            if (elevator.CurrentFloor == floor)
+                            {
+                                <td>
+                                    <span class="fw-bold text-warning">
+                                        🚗
+                                        @if (!string.IsNullOrEmpty(elevator.Direction))
+                                        {
+                                            <span>
+                                                (@elevator.Direction)
+                                            </span>
+                                        }
+                                    </span>
+                                </td>
+                            }
+                            else
+                            {
+                                <td></td>
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
