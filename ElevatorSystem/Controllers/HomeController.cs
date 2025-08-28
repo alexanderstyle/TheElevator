@@ -39,6 +39,7 @@ namespace ElevatorSystem.Controllers
                 Floor = r.Floor,
                 Direction = r.Direction.ToString()
             }).ToList();
+            // For each elevator, build a list of its target requests (away from current floor)
 
             var model = new ElevatorManagerViewModel
             {
@@ -47,17 +48,23 @@ namespace ElevatorSystem.Controllers
                 PendingRequests = pendingRequestsViewModel
             };
 
+            await Task.CompletedTask;
+
             return View(model);
         }
 
         public async Task<IActionResult> Privacy()
         {
+            await Task.CompletedTask;
+
             return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> Error()
         {
+            await Task.CompletedTask;
+
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }

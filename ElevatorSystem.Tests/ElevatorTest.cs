@@ -29,6 +29,31 @@ public class ElevatorTest
     }
 
     [Fact]
+    public void ReceiveRequest_AddsMultitpleRequestToQueue()
+    {
+        // Arrange
+        var manager = new ElevatorManager(_mockLogger.Object);
+        var request = new ElevatorRequest(5, Direction.Down);
+        var request1 = new ElevatorRequest(8, Direction.Down);
+        var request2 = new ElevatorRequest(2, Direction.Up);
+
+        // Act
+        manager.ReceiveRequest(request);
+        manager.ReceiveRequest(request1);
+        manager.ReceiveRequest(request2);
+        var pending = manager.GetPendingRequests();
+
+        // Assert
+        Assert.Equal(3, pending.Count);
+        Assert.Equal(5, pending[0].Floor);
+        Assert.Equal(8, pending[1].Floor);
+        Assert.Equal(2, pending[2].Floor);
+        Assert.Equal(Direction.Down, pending[0].Direction);
+        Assert.Equal(Direction.Down, pending[1].Direction);
+        Assert.Equal(Direction.Up, pending[2].Direction);
+    }
+
+    [Fact]
     public void ReceiveRequest_MultipleRequestsAreQueuedInOrder()
     {
         // Arrange

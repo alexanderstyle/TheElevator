@@ -24,7 +24,7 @@ public class ElevatorHallRequestGenerator : BackgroundService
 
     public ElevatorHallRequestGenerator(ILogger<ElevatorHallRequestGenerator> logger,
         ElevatorManager manager,
-        int maxRequests = 3, 
+        int maxRequests = 1000, 
         int floorCount = 10)
     {
         _logger = logger;
