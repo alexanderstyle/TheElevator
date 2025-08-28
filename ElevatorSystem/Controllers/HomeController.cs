@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Linq;
 using ElevatorSystem.Models;
 using ElevatorSystem.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -13,25 +14,57 @@ namespace ElevatorSystem.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly ElevatorManager _manager;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger,
+            ElevatorManager manager)
         {
             _logger = logger;
+            _manager = manager;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var floors = _manager.Floors;
+            var elevatorsViewModel = _manager.GetElevators().Select(e => new ElevatorViewModel
+            {
+                Id = e.Id,
+                CurrentFloor = e.CurrentFloor,
+                Direction = e.Direction?.ToString() ?? "", // null = idle
+                TargetFloors = e.TargetFloors.ToList(),
+                IsIdle = e.IsIdle
+            }).ToList();
+            var pendingRequestsViewModel = _manager.GetPendingRequests().Select(r => new ElevatorRequestViewModel
+            {
+                Floor = r.Floor,
+                Direction = r.Direction.ToString()
+            }).ToList();
+            // For each elevator, build a list of its target requests (away from current floor)
+
+            var model = new ElevatorManagerViewModel
+            {
+                Floors = floors,
+                Elevators = elevatorsViewModel,
+                PendingRequests = pendingRequestsViewModel
+            };
+
+            await Task.CompletedTask;
+
+            return View(model);
         }
 
-        public IActionResult Privacy()
+        public async Task<IActionResult> Privacy()
         {
+            await Task.CompletedTask;
+
             return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public async Task<IActionResult> Error()
         {
+            await Task.CompletedTask;
+
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }

@@ -19,14 +19,12 @@ public class ElevatorSimulationService : BackgroundService
     private readonly long _defaultTickIntervalSeconds = 10;
 
     private readonly Random randomizer = new Random();
-    private readonly int _floorCount;
 
     public ElevatorSimulationService(ILogger<ElevatorSimulationService> logger,
         ElevatorManager manager)
     {
         _logger = logger;
         _manager = manager;
-        _floorCount = 10; // TODO: Abstract this so it can be used from ElevatorManager.
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
