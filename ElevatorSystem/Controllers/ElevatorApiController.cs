@@ -10,7 +10,6 @@ namespace ElevatorSystem.Controllers;
 /// This is not stated in requirements but is provided for manual elevator requests via api requests.
 /// POST http://{hostname}:{port}/api/elevator
 /// </summary>
-[Obsolete("APIs are no longer used. Simulations for generating elevator requests are done by background services.")]
 [Route("api/elevator")]
 [ApiController]
 public class ElevatorApiController : ControllerBase
@@ -22,14 +21,23 @@ public class ElevatorApiController : ControllerBase
          _manager = manager;
     }
 
+    [HttpGet]
+    [Route("status")]
+    public async Task<IActionResult> GetStatus()
+    {
+        return Ok(new { message = "Elevator API is running" });
+    }
+
     /// <summary>
     /// Handles elevator requests from external clients (Simulation System).
     /// </summary>
-    [HttpPost("request")]
+    [Obsolete("Manual request via this api will be removed in future versions. Use auto-generated requests using background services.")]
+    [HttpPost]
+    [Route("request")]
     public IActionResult RequestElevator([FromBody] ElevatorRequest request)
     {
         _manager.ReceiveRequest(request);
 
-        return Ok(new { message = "Request received" });
+        return Ok(new { message = "Api elevator request received" });
     }
 }
