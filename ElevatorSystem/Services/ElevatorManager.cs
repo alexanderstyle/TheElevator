@@ -8,40 +8,6 @@ namespace ElevatorSystem.Services;
 /// <summary>
 /// Our singleton ElevatorManager instance manages all elevator state and logic (the brain).
 /// </summary>
-//User/SS           ElevatorSystem API      ElevatorManager     Timer
-//   |                   |                       |                |
-//   |  POST /request    |                       |                |
-//   |------------------>|                       |                |
-//   |                   |  .ReceiveRequest(req) |                |
-//   |                   |---------------------->|                |
-//   |                   |                       |   Add req to   |
-//   |                   |                       |   pending queue|
-//   |                   |      200 OK           |                |
-//   |<------------------|                       |                |
-//   |                   |                       |                |
-//=== Timer fires(tick) =========================================|
-//   |                   |        (AssignRequests)                |
-//   |                   |--------------------------------------->|
-//   |                   |                       | Assign request |
-//   |                   |                       | to elevator    |
-//   |                   |<---------------------------------------|
-//   |                   |      (Step)             |              |
-//   |                   |--------------------------------------->|
-//   |                   |                       | Move elevator  |
-//   |                   |                       | (advance/dequeue)
-//   |                   |<---------------------------------------|
-//=== Repeat ===================================                  |
-//
-//
-//API receives elevator request
-//   |
-//ElevatorManager.ReceiveRequest(added to queue)
-//   |
-//ElevatorSimulationService tick:
-//    -> AssignRequests(assign queued requests)
-//    -> Step(move elevators)
-//    -> Wait for next tick
-//(repeats forever)
 public class ElevatorManager
 {
     private readonly ILogger<ElevatorManager> _logger;
