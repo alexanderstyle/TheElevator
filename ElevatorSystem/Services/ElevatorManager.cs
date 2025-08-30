@@ -39,6 +39,14 @@ public class ElevatorManager
     {
         lock (_lock)
         {
+            var exists = _pendingRequests.Any(r => r.Floor == request.Floor && r.Direction == request.Direction);
+
+            if (exists)
+            {
+                _logger.LogInformation($"Duplicate \"{request.Direction}\" requestPriority on floor {request.Floor} ignored.");
+                return;
+            }
+
             _pendingRequests.Enqueue(request);
             _logger.LogInformation($"\"{request.Direction}\" request on floor {request.Floor} received.");
         }
@@ -54,33 +62,34 @@ public class ElevatorManager
         {
             while (_pendingRequests.Count > 0)
             {
-                var request = _pendingRequests.Peek();
+                var requestPriority = _pendingRequests.Peek();
 
-                // Find all elevators that are idle or heading in request.Direction (and will pass the floor)
+                // Find all elevators that are idle or heading in requestPriority.Direction (and will pass the floor)
                 var candidates = _elevators.Where(e =>
                     e.IsIdle ||
-                    e.Direction == request.Direction &&
-                        (request.Direction == Direction.Up && e.CurrentFloor <= request.Floor ||
-                         request.Direction == Direction.Down && e.CurrentFloor >= request.Floor)
+                    e.Direction == requestPriority.Direction &&
+                        (requestPriority.Direction == Direction.Up && e.CurrentFloor <= requestPriority.Floor ||
+                         requestPriority.Direction == Direction.Down && e.CurrentFloor >= requestPriority.Floor)
                 ).ToList();
 
                 if (candidates.Any())
                 {
                     // Assign to closest elevator
-                    var chosen = candidates.OrderBy(e => Math.Abs(e.CurrentFloor - request.Floor)).First();
-                    if (!chosen.TargetFloors.Contains(request.Floor))
+                    var chosen = candidates.OrderBy(e => Math.Abs(e.CurrentFloor - requestPriority.Floor)).First();
+                    if (!chosen.TargetFloors.Contains(requestPriority.Floor))
                     {
-                        chosen.TargetFloors.Enqueue(request.Floor);
-                    }
-                    // Set the direction if idle
-                    if (chosen.Direction == null)
-                    {
-                        chosen.Direction = request.Floor > chosen.CurrentFloor ? Direction.Up : Direction.Down;
+                        chosen.TargetFloors.Enqueue(requestPriority.Floor);
+
+                        // Set the direction if idle
+                        if (chosen.Direction == null)
+                        {
+                            chosen.Direction = requestPriority.Floor > chosen.CurrentFloor ? Direction.Up : Direction.Down;
+                        }
                     }
 
                     _pendingRequests.Dequeue();
 
-                    _logger.LogInformation($"Elevator {chosen.Id} assigned \"{request.Direction}\" request on floor {request.Floor} (currently at floor {chosen.CurrentFloor})");
+                    _logger.LogInformation($"Elevator {chosen.Id} assigned \"{requestPriority.Direction}\" requestPriority on floor {requestPriority.Floor} (currently at floor {chosen.CurrentFloor})");
                 }
                 else
                 {
