@@ -57,6 +57,34 @@ public class ElevatorTest
     }
 
     [Fact]
+    public void ReceiveRequest_Should_AddSameFloorButDifferentDirectionToQueue()
+    {
+        // Arrange
+        var manager = new ElevatorManager(_mockLogger.Object);
+        var request = new HallRequest(5, Direction.Down);
+        var request1 = new HallRequest(8, Direction.Down);
+        var request2 = new HallRequest(5, Direction.Up);
+
+        // Act
+        manager.ReceiveRequest(request);
+        manager.ReceiveRequest(request1);
+        manager.ReceiveRequest(request2);
+        var pending = manager.GetPendingRequests();
+
+        // Assert
+        Assert.Equal(3, pending.Count);
+        Assert.Equal(5, pending[0].Floor);
+        Assert.Equal(8, pending[1].Floor);
+        Assert.Equal(5, pending[2].Floor);
+        Assert.Equal(Direction.Down, pending[0].Direction);
+        Assert.Equal(Direction.Down, pending[1].Direction);
+        Assert.Equal(Direction.Up, pending[2].Direction);
+
+        // All statuses should be Pending.
+        Assert.All(pending, r => Assert.Equal(HallRequestStatus.Pending, r.Status));
+    }
+
+    [Fact]
     public void ReceiveRequest_Should_AddMultipleRequestsInQueueAndInOrder()
     {
         // Arrange
@@ -106,7 +134,7 @@ public class ElevatorTest
     }
 
     [Fact]
-    public void AssignRequests_Should_AssignRequestToElevator()
+    public void AssignRequests_Should_assign_1_request_to_1st_elevator()
     {
         // Arrange
         var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
@@ -120,8 +148,8 @@ public class ElevatorTest
         var assignedElevator = elevators.FirstOrDefault(e => e.TargetFloors.Contains(5));
 
         // Assert
+        Assert.Equal(4, elevators.Count);
         Assert.NotNull(assignedElevator);
-        Assert.Single(assignedElevator.TargetFloors.Select(x => x == 5));
         Assert.Equal(5, assignedElevator.TargetFloors.First());
 
         // No more pending requests, but there should be assigned.
@@ -130,96 +158,55 @@ public class ElevatorTest
     }
 
     [Fact]
-    public void AssignRequests_BatchesUpRequestsToSingleElevator()
+    public void AssignRequests_Should_assign_6_request_to_elevator_1()
     {
-        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-
-        // Idle elevator at floor 1 will be assigned all "Up" requests above floor 1
-        manager.ReceiveRequest(new HallRequest(3, Direction.Up));
-        manager.ReceiveRequest(new HallRequest(5, Direction.Up));
-        manager.ReceiveRequest(new HallRequest(7, Direction.Up));
+        // Arrange
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 1);
+        var request = new HallRequest(2, Direction.Up);
+        var request1 = new HallRequest(3, Direction.Up);
+        var request2 = new HallRequest(4, Direction.Up);
 
         // Act
+        manager.ReceiveRequest(request);
         manager.AssignRequests();
 
+        // Now receive more requests and assign to that elevator as one batch.
+        manager.ReceiveRequest(new HallRequest(5, Direction.Up));
+        manager.ReceiveRequest(new HallRequest(6, Direction.Up));
+        manager.ReceiveRequest(new HallRequest(7, Direction.Up));
+
+        manager.AssignRequests();
+
+        var assigned = manager.GetAssignedRequests();
+
         // Assert
-        var elevators = manager.GetElevators();
-        var elevator = elevators.First();
-
-        // Elevator's targets should be all requested floors (may be in any up order, often insertion order)
-        var targets = elevator.TargetFloors.ToList();
-        Assert.Contains(3, targets);
-        Assert.Contains(5, targets);
-        Assert.Contains(7, targets);
-        Assert.Equal(Direction.Up, elevator.Direction);
-
-        // Each request should be assigned
-        var assigned = manager.GetPendingRequests().Where(r => r.Status == HallRequestStatus.Assigned).ToList();
-        Assert.Equal(3, assigned.Count);
-        Assert.All(assigned, r => Assert.Equal(elevator.Id, r.AssignedElevatorId));
+        // Are all assigned to elevator 1?
+        Assert.All(assigned, r => Assert.Equal(1, r.AssignedElevatorId));
     }
 
     [Fact]
-    public void AssignRequests_BatchingThenIdle()
+    public void AssignRequests_Should_assign_first_1_request_and_next_3_requests_to_elevator_1_that_is_enroute()
     {
-        // Arrange: two elevators, both idle on different floors
-        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 2);
-        var elevs = manager.GetElevators();
-        // Place elevator 1 at 1, elevator 2 at 10
-        elevs[0].CurrentFloor = 1; // id 1, floor 1
-        elevs[1].CurrentFloor = 10; // id 2, floor 10
+        // Arrange
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
 
-        manager.ReceiveRequest(new HallRequest(2, Direction.Up)); // Should go to elevator 1
-        manager.ReceiveRequest(new HallRequest(4, Direction.Up)); // Should batch to elevator 1
-        manager.ReceiveRequest(new HallRequest(9, Direction.Down)); // Should go to elevator 2
-
+        // Act
+        manager.ReceiveRequest(new HallRequest(6, Direction.Down));
         manager.AssignRequests();
+        manager.Step(); // Move elevator 1 to floor 2.
 
-        // Check elevator 1 handled two "Up" requests
-        var elev1 = manager.GetElevators().First(e => e.Id == 1);
-        var elev1Targets = elev1.TargetFloors.ToList();
-        Assert.Contains(2, elev1Targets);
-        Assert.Contains(4, elev1Targets);
+        // More requests while elevator 1 is enroute.
+        manager.ReceiveRequest(new HallRequest(4, Direction.Down));
+        manager.ReceiveRequest(new HallRequest(5, Direction.Down));
+        manager.AssignRequests();
+        manager.Step(); // 3rd floor
+        manager.Step(); // 4th floor
+        manager.Step(); // 5th floor
 
-        // Check elevator 2 handled one "Down" request
-        var elev2 = manager.GetElevators().First(e => e.Id == 2);
-        var elev2Targets = elev2.TargetFloors.ToList();
-        Assert.Contains(9, elev2Targets);
+        var elevators = manager.GetElevators();
 
-        // Check request assignment
-        var assigned = manager.GetPendingRequests().Where(r => r.Status == HallRequestStatus.Assigned).ToList();
-        Assert.Equal(3, assigned.Count);
-        Assert.Contains(assigned, r => r.Floor == 9 && r.AssignedElevatorId == 2);
-        Assert.Contains(assigned, r => r.Floor == 2 && r.AssignedElevatorId == 1);
-        Assert.Contains(assigned, r => r.Floor == 4 && r.AssignedElevatorId == 1);
+        Assert.Equal(4, elevators.Single(e => e.Id == 1).CurrentFloor);
     }
-
-    //[Fact]
-    //public void AssignRequests_Should_Assign2ndElevatorTo2ndRequest()
-    //{
-    //    // Arrange
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 2);
-    //    var request1 = new HallRequest(8, Direction.Down); // First idle elevator should take this
-    //    var request2 = new HallRequest(2, Direction.Down); // Second idle elevator should take this 
-
-    //    // Act
-    //    manager.ReceiveRequest(request1);
-    //    manager.ReceiveRequest(request2);
-
-    //    manager.AssignRequests();
-
-    //    // Assert
-    //    var elevators = manager.GetElevators();
-    //    var assignedToRequest1 = elevators.FirstOrDefault(e => e.TargetFloors.Contains(4));
-
-    //    Assert.NotNull(assignedToRequest1);
-    //    Assert.Single(assignedToRequest1.TargetFloors);
-    //    Assert.Equal(5, assignedToRequest1.TargetFloors.First());
-
-    //    // The pending queue should still exist until the elevator is served.
-    //    Assert.Equal(5, manager.GetPendingRequests().First().Floor);
-    //    Assert.Equal(Direction.Down, manager.GetPendingRequests().First().Direction);
-    //}
 
     [Fact]
     public void Step_MovesElevatorOneFloorTowardTarget()

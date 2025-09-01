@@ -106,23 +106,8 @@ public class ElevatorManager
                 pendingRequest.Status = HallRequestStatus.Assigned;
                 pendingRequest.AssignedElevatorId = idleElevator.Id;
             }
-            
-            // 3. Otherwise, leave pendingRequest pending for now
-        }
-    }
 
-
-    private void InsertFloorInDirectionOrder(Elevator elevator, int floor)
-    {
-        if (!elevator.TargetFloors.Contains(floor))
-        {
-            elevator.TargetFloors.Add(floor);
-
-            if (elevator.Direction.HasValue && elevator.Direction.Value == Direction.Up)
-                elevator.TargetFloors.Sort();
-            else
-                // Sort descending for down direction or null (new assignment)
-                elevator.TargetFloors.Sort((a, b) => b.CompareTo(a));
+            // No candidate elevator found, will try again next time.
         }
     }
 
@@ -182,6 +167,20 @@ public class ElevatorManager
 
                 _logger.LogInformation($"Car {elevator.Id} is on floor {elevator.CurrentFloor} and {elevator.Direction?.ToString().ToLower()}.");
             }
+        }
+    }
+
+    private void InsertFloorInDirectionOrder(Elevator elevator, int floor)
+    {
+        if (!elevator.TargetFloors.Contains(floor))
+        {
+            elevator.TargetFloors.Add(floor);
+
+            if (elevator.Direction.HasValue && elevator.Direction.Value == Direction.Up)
+                elevator.TargetFloors.Sort();
+            else
+                // Sort descending for down direction or null (new assignment)
+                elevator.TargetFloors.Sort((a, b) => b.CompareTo(a));
         }
     }
 
