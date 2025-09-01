@@ -30,6 +30,8 @@ public class ElevatorApiController : ControllerBase
             .ToList();
         var elevators = _manager.GetElevators();
 
+        await Task.CompletedTask;
+
         return Ok(new { floors = _manager.Floors, pendingRequests = pendingRequests, elevators = elevators });
     }
 

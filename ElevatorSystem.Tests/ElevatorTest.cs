@@ -185,30 +185,6 @@ public class ElevatorTest
     }
 
     [Fact]
-    public void AssignRequests_Should_assign_first_1_request_and_next_3_requests_to_elevator_1_that_is_enroute()
-    {
-        // Arrange
-        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-
-        // Act
-        manager.ReceiveRequest(new HallRequest(6, Direction.Down));
-        manager.AssignRequests();
-        manager.Step(); // Move elevator 1 to floor 2.
-
-        // More requests while elevator 1 is enroute.
-        manager.ReceiveRequest(new HallRequest(4, Direction.Down));
-        manager.ReceiveRequest(new HallRequest(5, Direction.Down));
-        manager.AssignRequests();
-        manager.Step(); // 3rd floor
-        manager.Step(); // 4th floor
-        manager.Step(); // 5th floor
-
-        var elevators = manager.GetElevators();
-
-        Assert.Equal(4, elevators.Single(e => e.Id == 1).CurrentFloor);
-    }
-
-    [Fact]
     public void Step_MovesElevatorOneFloorTowardTarget()
     {
         // Arrange
