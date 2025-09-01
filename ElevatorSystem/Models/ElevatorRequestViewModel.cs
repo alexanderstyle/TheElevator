@@ -7,7 +7,7 @@ public class ElevatorRequestViewModel
 
     public ElevatorRequestViewModel() { }
 
-    public ElevatorRequestViewModel(ElevatorRequest request)
+    public ElevatorRequestViewModel(HallRequest request)
     {
         Floor = request.Floor;
         Direction = request.Direction.ToString();

@@ -1,24 +1,30 @@
-﻿using ElevatorSystem.Controllers;
-using ElevatorSystem.Models;
+﻿using ElevatorSystem.Models;
+using System;
+using System.Collections.Generic;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace ElevatorSystem.Services;
+public enum HallRequestStatus { Pending, Assigned }
 
-/// <summary>
-/// Our singleton ElevatorManager instance manages all elevator state and logic (the brain).
-/// </summary>
+public class HallRequest
+{
+    public int Floor { get; set; }
+    public Direction Direction { get; set; }
+    public HallRequestStatus Status { get; set; } = HallRequestStatus.Pending;
+    public int? AssignedElevatorId { get; set; }
+    public HallRequest(int floor, Direction dir)
+    {
+        Floor = floor;
+        Direction = dir;
+    }
+}
+
 public class ElevatorManager
 {
     private readonly ILogger<ElevatorManager> _logger;
-
-    private readonly int _floors;
-    private readonly int _elevatorCount;
-
+    private readonly List<HallRequest> _hallRequests = new();
     private readonly List<Elevator> _elevators;
-    private readonly Queue<ElevatorRequest> _pendingRequests = new Queue<ElevatorRequest>();
-
-    private readonly object _lock = new object();
+    private readonly int _floors;
+    private readonly object _lock = new();
 
     public int Floors => _floors;
 
@@ -28,148 +34,190 @@ public class ElevatorManager
     {
         _logger = logger;
         _floors = floors;
-        _elevatorCount = elevatorCount;
-        _elevators = Enumerable.Range(1, elevatorCount).Select(i => new Elevator(i)).ToList();
+        _elevators = Enumerable.Range(1, elevatorCount)
+                               .Select(i => new Elevator(i, 1)).ToList();
     }
 
-    /// <summary>
-    /// Called by controller: Add a new elevator request
-    /// </summary>
-    public void ReceiveRequest(ElevatorRequest request)
+    // -- Step 1: Human hall pendingRequest, prevents duplicates (same floor+direction)
+    public void ReceiveRequest(HallRequest request)
     {
-        lock (_lock)
-        {
-            var exists = _pendingRequests.Any(r => r.Floor == request.Floor && r.Direction == request.Direction);
+        // Cannot go up from top floor
+        if (request.Floor == Floors && request.Direction == Direction.Up)
+            return;
 
-            if (exists)
-            {
-                _logger.LogInformation($"Duplicate \"{request.Direction}\" requestPriority on floor {request.Floor} ignored.");
-                return;
-            }
+        // Cannot go down from bottom floor
+        if (request.Floor == 1 && request.Direction == Direction.Down)
+            return;
 
-            _pendingRequests.Enqueue(request);
-            _logger.LogInformation($"\"{request.Direction}\" request on floor {request.Floor} received.");
-        }
+        // Check for duplicate. Already exists with same floor and direction and not yet served
+        bool exists = _hallRequests.Any(r =>
+            r.Floor == request.Floor &&
+            r.Direction == request.Direction &&
+            r.Status != HallRequestStatus.Assigned
+        );
+
+        if (exists)
+            return;
+
+        // Add the new pendingRequest
+        _hallRequests.Add(new HallRequest(request.Floor, request.Direction));
+
+        _logger.LogInformation($"\"{request.Direction}\" request on floor {request.Floor} received.");
     }
 
-    /// <summary>
-    /// Assign requests to elevators.
-    /// More efficient to call this periodically (e.g. every second) like inside a timer or background task.
-    /// </summary>
     public void AssignRequests()
     {
-        lock (_lock)
+        var pendingRequests = _hallRequests
+            .Where(r => r.Status == HallRequestStatus.Pending)
+            .OrderBy(r => r.Floor)
+            .ToList();
+
+        foreach (var pendingRequest in pendingRequests)
         {
-            while (_pendingRequests.Count > 0)
+            // Try to batch with any moving elevator in the same direction that will pass requested floor.
+            var passingElevator = _elevators
+                .Where(e =>
+                    e.Direction == pendingRequest.Direction &&
+                    IsPassingFloor(e, pendingRequest.Floor))
+                .OrderBy(e => Math.Abs(e.CurrentFloor - pendingRequest.Floor))
+                .FirstOrDefault();
+
+            if (passingElevator != null)
             {
-                var requestPriority = _pendingRequests.Peek();
+                InsertFloorInDirectionOrder(passingElevator, pendingRequest.Floor);
 
-                // Find all elevators that are idle or heading in requestPriority.Direction (and will pass the floor)
-                var candidates = _elevators.Where(e =>
-                    e.IsIdle ||
-                    e.Direction == requestPriority.Direction &&
-                        (requestPriority.Direction == Direction.Up && e.CurrentFloor <= requestPriority.Floor ||
-                         requestPriority.Direction == Direction.Down && e.CurrentFloor >= requestPriority.Floor)
-                ).ToList();
+                pendingRequest.Status = HallRequestStatus.Assigned;
+                pendingRequest.AssignedElevatorId = passingElevator.Id;
 
-                if (candidates.Any())
+                continue; 
+            }
+
+            // Otherwise, assign to nearest idle elevator
+            var idleElevator = _elevators
+                .Where(e => e.IsIdle)
+                .OrderBy(e => Math.Abs(e.CurrentFloor - pendingRequest.Floor))
+                .FirstOrDefault();
+
+            if (idleElevator != null)
+            {
+                InsertFloorInDirectionOrder(idleElevator, pendingRequest.Floor);
+
+                idleElevator.Direction = pendingRequest.Floor > idleElevator.CurrentFloor ? Direction.Up : Direction.Down;
+                pendingRequest.Status = HallRequestStatus.Assigned;
+                pendingRequest.AssignedElevatorId = idleElevator.Id;
+            }
+            
+            // 3. Otherwise, leave pendingRequest pending for now
+        }
+    }
+
+
+    private void InsertFloorInDirectionOrder(Elevator elevator, int floor)
+    {
+        if (!elevator.TargetFloors.Contains(floor))
+        {
+            elevator.TargetFloors.Add(floor);
+
+            if (elevator.Direction.HasValue && elevator.Direction.Value == Direction.Up)
+                elevator.TargetFloors.Sort();
+            else
+                // Sort descending for down direction or null (new assignment)
+                elevator.TargetFloors.Sort((a, b) => b.CompareTo(a));
+        }
+    }
+
+    public void Step()
+    {
+        foreach (var elevator in _elevators)
+        {
+            if (elevator.TargetFloors.Count == 0)
+            {
+                // No more targets, elevator is idle
+                elevator.Direction = null;
+                continue;
+            }
+
+            // Always proceed to the next target in direction order (thanks to InsertFloorInDirectionOrder)
+            var target = elevator.TargetFloors[0];
+
+            if (elevator.CurrentFloor == target)
+            {
+                // Arrived at target floor!
+                elevator.TargetFloors.RemoveAt(0);
+
+                // Remove all assigned hall requests at this floor + this direction + this elevator
+                _hallRequests.RemoveAll(r =>
+                    r.Floor == elevator.CurrentFloor &&
+                    r.Status == HallRequestStatus.Assigned &&
+                    r.AssignedElevatorId == elevator.Id &&
+                    elevator.Direction == r.Direction
+                );
+
+                // Set direction to next target, or set to idle (null) if no targets left
+                if (elevator.TargetFloors.Count > 0)
                 {
-                    // Assign to closest elevator
-                    var chosen = candidates.OrderBy(e => Math.Abs(e.CurrentFloor - requestPriority.Floor)).First();
-                    if (!chosen.TargetFloors.Contains(requestPriority.Floor))
-                    {
-                        chosen.TargetFloors.Enqueue(requestPriority.Floor);
-
-                        // Set the direction if idle
-                        if (chosen.Direction == null)
-                        {
-                            chosen.Direction = requestPriority.Floor > chosen.CurrentFloor ? Direction.Up : Direction.Down;
-                        }
-                    }
-
-                    _pendingRequests.Dequeue();
-
-                    _logger.LogInformation($"Elevator {chosen.Id} assigned \"{requestPriority.Direction}\" requestPriority on floor {requestPriority.Floor} (currently at floor {chosen.CurrentFloor})");
+                    var next = elevator.TargetFloors[0];
+                    elevator.Direction = next > elevator.CurrentFloor ? Direction.Up : Direction.Down;
                 }
                 else
                 {
-                    // No candidate right now; leave request for next tick
-                    break;
+                    elevator.Direction = null;
                 }
+
+                _logger.LogInformation($"Car {elevator.Id} is on floor {elevator.CurrentFloor} and {(elevator.Direction?.ToString().ToLower() ?? "idle")}.");
+            }
+            else
+            {
+                // Move elevator one floor toward next target
+                if (target > elevator.CurrentFloor)
+                {
+                    elevator.Direction = Direction.Up;
+                    elevator.CurrentFloor += 1;
+                }
+                else if (target < elevator.CurrentFloor)
+                {
+                    elevator.Direction = Direction.Down;
+                    elevator.CurrentFloor -= 1;
+                }
+
+                _logger.LogInformation($"Car {elevator.Id} is on floor {elevator.CurrentFloor} and {elevator.Direction?.ToString().ToLower()}.");
             }
         }
     }
 
     /// <summary>
-    /// Move all elevators one step (NOTE: 1 step = 1 floor).
-    /// Call this on a timer or "tick" (from a background process/service)
+    /// Returns true if this elevator going to pass (or stop at) this floor in its current direction.
     /// </summary>
-    public void Step()
+    /// <param name="elevator"></param>
+    /// <param name="requestFloor"></param>
+    /// <returns></returns>
+    private bool IsPassingFloor(Elevator elevator, int requestFloor)
     {
-        lock (_lock)
+        if (elevator.Direction == null)
         {
-            foreach (var elevator in _elevators)
-            {
-                if (elevator.TargetFloors.Count == 0)
-                {
-                    elevator.Direction = null;
-                    continue;
-                }
+            return false;
+        }
 
-                var target = elevator.TargetFloors.Peek();
-
-                if (elevator.CurrentFloor == target)
-                {
-                    // Arrived at floor
-                    Console.WriteLine($"Elevator {elevator.Id} stopped at floor {target} for \"{(elevator.Direction == Direction.Up ? "Up" : "Down")}\" request.");
-
-                    elevator.TargetFloors.Dequeue();
-
-                    // Set new direction if any more stops
-                    if (elevator.TargetFloors.Count > 0)
-                    {
-                        var next = elevator.TargetFloors.Peek();
-                        elevator.Direction = next > elevator.CurrentFloor ? Direction.Up : Direction.Down;
-                    }
-                    else
-                    {
-                        elevator.Direction = null;
-                    }
-                }
-                else
-                {
-                    // Before stepping up or down, check our current elevator floor for logging.
-                    var oldFloor = elevator.CurrentFloor;
-
-                    elevator.Direction = target > elevator.CurrentFloor ? Direction.Up : Direction.Down;
-                    elevator.CurrentFloor += elevator.Direction == Direction.Up ? 1 : -1;
-
-                    _logger.LogInformation($"Elevator {elevator.Id} moving {elevator.Direction} from floor {oldFloor} to {elevator.CurrentFloor}. Next stop: floor {target}");
-                }
-            }
+        if (elevator.Direction == Direction.Up)
+        {
+            int highest = elevator.TargetFloors.Count > 0 ? Math.Max(elevator.CurrentFloor, elevator.TargetFloors.Max()) : elevator.CurrentFloor;
+            return requestFloor > elevator.CurrentFloor && requestFloor <= highest;
+        }
+        else
+        {
+            int lowest = elevator.TargetFloors.Count > 0 ? Math.Min(elevator.CurrentFloor, elevator.TargetFloors.Min()) : elevator.CurrentFloor;
+            return requestFloor < elevator.CurrentFloor && requestFloor >= lowest;
         }
     }
 
     /// <summary>
     /// Get a snapshot of all elevator statuses (for controller/view)
     /// </summary>
-    public List<Elevator> GetElevators()
-    {
-        lock (_lock)
-        {
-            // Get a copy of elevators to avoid external mutation.
-            return _elevators.Select(e => new Elevator(e)).ToList();
-        }
-    }
+    public List<Elevator> GetElevators() => _elevators.Select(e => new Elevator(e)).ToList();
 
-    /// <summary>
-    /// For diagnostics: get all pending requests, if needed
-    /// </summary>
-    public List<ElevatorRequest> GetPendingRequests()
-    {
-        lock (_lock)
-        {
-            return _pendingRequests.ToList();
-        }
-    }
+    public List<HallRequest> GetPendingRequests()
+        => _hallRequests.Where(x => x.Status == HallRequestStatus.Pending).ToList();
+
+    public List<HallRequest> GetAssignedRequests()
+        => _hallRequests.Where(x => x.Status == HallRequestStatus.Assigned).ToList();
 }

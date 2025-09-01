@@ -19,7 +19,7 @@ public class ElevatorHallRequestGenerator : BackgroundService
     private readonly int _floorCount;
     private readonly int _maxRequests;
     private int _requestCount = 0;
-    private readonly long _defaultTickIntervalSeconds = 15;
+    private readonly long _defaultTickIntervalSeconds = 1;
 
 
     public ElevatorHallRequestGenerator(ILogger<ElevatorHallRequestGenerator> logger,
@@ -60,7 +60,7 @@ public class ElevatorHallRequestGenerator : BackgroundService
             _logger.LogInformation($"\"{direction}\" request on floor {floor} auto-generated. This is request {_requestCount}.");
 
             // Create and submit the request.
-            var request = new ElevatorRequest(floor, direction);
+            var request = new HallRequest(floor, direction);
             _manager.ReceiveRequest(request);
 
             _requestCount++;
