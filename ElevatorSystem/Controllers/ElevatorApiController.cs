@@ -25,7 +25,12 @@ public class ElevatorApiController : ControllerBase
     [Route("status")]
     public async Task<IActionResult> GetStatus()
     {
-        return Ok(new { message = "Elevator API is running" });
+        var pendingRequests = _manager.GetPendingRequests()
+            .Select(r => new { r.Floor, Direction = r.Direction.ToString(), r.Status, r.AssignedElevatorId })
+            .ToList();
+        var elevators = _manager.GetElevators();
+
+        return Ok(new { floors = _manager.Floors, pendingRequests = pendingRequests, elevators = elevators });
     }
 
     /// <summary>
@@ -34,7 +39,7 @@ public class ElevatorApiController : ControllerBase
     [Obsolete("Manual request via this api will be removed in future versions. Use auto-generated requests using background services.")]
     [HttpPost]
     [Route("request")]
-    public IActionResult RequestElevator([FromBody] ElevatorRequest request)
+    public IActionResult RequestElevator([FromBody] HallRequest request)
     {
         _manager.ReceiveRequest(request);
 

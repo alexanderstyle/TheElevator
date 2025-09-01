@@ -3,27 +3,22 @@
 public class Elevator
 {
     public int Id { get; }
-    // Initialize all elevators to start at floor 1.
-    public int CurrentFloor { get; set; } = 1;
+    public int CurrentFloor { get; set; }
     public Direction? Direction { get; set; }
-    public Queue<int> TargetFloors { get; } = new Queue<int>();
-    // This is a calculated property, and always in sync with TargetFloors.
+    public List<int> TargetFloors { get; } = new();
     public bool IsIdle => TargetFloors.Count == 0;
 
-    public Elevator(int id)
+    public Elevator(int id, int startingFloor = 1)
     {
         Id = id;
+        CurrentFloor = startingFloor;
     }
 
-    /// <summary>
-    /// Copy constructor. Useful for copying objects without mutating the original.
-    /// </summary>
-    /// <param name="other"></param>
     public Elevator(Elevator other)
     {
         Id = other.Id;
         CurrentFloor = other.CurrentFloor;
         Direction = other.Direction;
-        TargetFloors = new Queue<int>(other.TargetFloors);
+        TargetFloors = new List<int>(other.TargetFloors);
     }
 }
