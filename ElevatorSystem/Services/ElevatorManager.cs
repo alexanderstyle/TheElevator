@@ -185,7 +185,7 @@ public class ElevatorManager
     }
 
     /// <summary>
-    /// Returns true if this elevator going to pass (or stop at) this floor in its current direction.
+    /// Returns true if this elevator is going to pass at (or stop at) requested floor in its current direction.
     /// </summary>
     /// <param name="elevator"></param>
     /// <param name="requestFloor"></param>

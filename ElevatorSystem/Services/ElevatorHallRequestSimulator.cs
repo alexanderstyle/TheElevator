@@ -11,9 +11,9 @@ namespace ElevatorSystem.Services;
 /// are constrained by the <paramref name="floorCount"/> parameter. Requests are sent to the <see
 /// cref="ElevatorManager"/> for processing.  The service runs until the maximum number of requests is reached or the
 /// application is stopped.</remarks>
-public class ElevatorHallRequestGenerator : BackgroundService
+public class ElevatorHallRequestSimulator : BackgroundService
 {
-    private readonly ILogger<ElevatorHallRequestGenerator> _logger;
+    private readonly ILogger<ElevatorHallRequestSimulator> _logger;
     private readonly ElevatorManager _manager;
     private readonly Random randomizer = new();
     private readonly int _floorCount;
@@ -22,7 +22,7 @@ public class ElevatorHallRequestGenerator : BackgroundService
     private readonly long _defaultTickIntervalSeconds = 1;
 
 
-    public ElevatorHallRequestGenerator(ILogger<ElevatorHallRequestGenerator> logger,
+    public ElevatorHallRequestSimulator(ILogger<ElevatorHallRequestSimulator> logger,
         ElevatorManager manager,
         int maxRequests = 1000, 
         int floorCount = 10)

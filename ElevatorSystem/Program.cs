@@ -23,9 +23,10 @@ public class Program
         builder.Services.AddSingleton<ElevatorManager>();
 
         // We need a background service to run our elevator simulation logic.
-        builder.Services.AddHostedService<ElevatorSimulationService>();
+        builder.Services.AddHostedService<ElevatorAssignSimulator>();
+        builder.Services.AddHostedService<ElevatorStepSimulator>();
         // We need a background service to run our simulated elevator requests from along the hall.
-        builder.Services.AddHostedService<ElevatorHallRequestGenerator>();
+        builder.Services.AddHostedService<ElevatorHallRequestSimulator>();
 
         var app = builder.Build();
 

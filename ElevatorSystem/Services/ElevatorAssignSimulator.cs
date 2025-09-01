@@ -10,17 +10,17 @@ namespace ElevatorSystem.Services;
 /// <remarks>This service runs continuously in the background, invoking the <see
 /// cref="ElevatorManager.AssignRequests"/> method to assign pending requests and the <see cref="ElevatorManager.Step"/>
 /// method to move elevators at regular intervals. The interval between ticks is set to 10 seconds by default.</remarks>
-public class ElevatorSimulationService : BackgroundService
+public class ElevatorAssignSimulator : BackgroundService
 {
-    private readonly ILogger<ElevatorSimulationService> _logger;
+    private readonly ILogger<ElevatorAssignSimulator> _logger;
     private readonly ElevatorManager _manager;
 
     // Default interval, in seconds our elevator operations logic will fire.
-    private readonly long _defaultTickIntervalSeconds = 10;
+    private readonly long _defaultTickIntervalSeconds = 2;
 
     private readonly Random randomizer = new Random();
 
-    public ElevatorSimulationService(ILogger<ElevatorSimulationService> logger,
+    public ElevatorAssignSimulator(ILogger<ElevatorAssignSimulator> logger,
         ElevatorManager manager)
     {
         _logger = logger;
@@ -36,8 +36,6 @@ public class ElevatorSimulationService : BackgroundService
             try
             {
                 _manager.AssignRequests();
-
-                _manager.Step();
             }
             catch (Exception ex)
             {

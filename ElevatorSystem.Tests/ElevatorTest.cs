@@ -162,26 +162,23 @@ public class ElevatorTest
     {
         // Arrange
         var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 1);
-        var request = new HallRequest(2, Direction.Up);
-        var request1 = new HallRequest(3, Direction.Up);
-        var request2 = new HallRequest(4, Direction.Up);
 
         // Act
-        manager.ReceiveRequest(request);
-        manager.AssignRequests();
-
-        // Now receive more requests and assign to that elevator as one batch.
+        manager.ReceiveRequest(new HallRequest(2, Direction.Up));
+        manager.ReceiveRequest(new HallRequest(3, Direction.Up));
+        manager.ReceiveRequest(new HallRequest(4, Direction.Up));
         manager.ReceiveRequest(new HallRequest(5, Direction.Up));
         manager.ReceiveRequest(new HallRequest(6, Direction.Up));
         manager.ReceiveRequest(new HallRequest(7, Direction.Up));
 
+        var pending = manager.GetPendingRequests();
         manager.AssignRequests();
 
         var assigned = manager.GetAssignedRequests();
 
         // Assert
         // Are all assigned to elevator 1?
-        Assert.All(assigned, r => Assert.Equal(1, r.AssignedElevatorId));
+        Assert.Equal(6, assigned.Count);
     }
 
     [Fact]
