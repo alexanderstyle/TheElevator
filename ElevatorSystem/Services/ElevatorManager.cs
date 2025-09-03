@@ -9,7 +9,6 @@ public class ElevatorManager
     private readonly List<HallRequest> _hallRequests = new();
     private readonly List<Elevator> _elevators;
     private readonly int _floors;
-    private readonly object _lock = new();
 
     public int Floors => _floors;
 
