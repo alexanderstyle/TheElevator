@@ -1,17 +1,5 @@
 ﻿namespace ElevatorSystem.Models;
 
-public enum Direction
-{
-    Up,
-    Down
-}
-
-public enum HallRequestStatus
-{
-    Pending,  
-    Assigned
-}
-
 public class HallRequest
 {
     public int Floor { get; set; }

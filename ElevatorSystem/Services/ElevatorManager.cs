@@ -3,21 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public enum HallRequestStatus { Pending, Assigned }
-
-public class HallRequest
-{
-    public int Floor { get; set; }
-    public Direction Direction { get; set; }
-    public HallRequestStatus Status { get; set; } = HallRequestStatus.Pending;
-    public int? AssignedElevatorId { get; set; }
-    public HallRequest(int floor, Direction dir)
-    {
-        Floor = floor;
-        Direction = dir;
-    }
-}
-
 public class ElevatorManager
 {
     private readonly ILogger<ElevatorManager> _logger;
