@@ -1,4 +1,5 @@
-﻿using ElevatorSystem.Models;
+﻿using ElevatorSystem.Helper;
+using ElevatorSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,13 +63,13 @@ public class ElevatorManager
             var passingElevator = _elevators
                 .Where(e =>
                     e.Direction == pendingRequest.Direction &&
-                    IsPassingFloor(e, pendingRequest.Floor))
+                    ElevatorRouteHelper.IsPassingFloor(e, pendingRequest.Floor))
                 .OrderBy(e => Math.Abs(e.CurrentFloor - pendingRequest.Floor))
                 .FirstOrDefault();
 
             if (passingElevator != null)
             {
-                InsertFloorInDirectionOrder(passingElevator, pendingRequest.Floor);
+                ElevatorRouteHelper.InsertFloorInDirectionOrder(passingElevator, pendingRequest.Floor);
 
                 pendingRequest.Status = HallRequestStatus.Assigned;
                 pendingRequest.AssignedElevatorId = passingElevator.Id;
@@ -84,7 +85,7 @@ public class ElevatorManager
 
             if (idleElevator != null)
             {
-                InsertFloorInDirectionOrder(idleElevator, pendingRequest.Floor);
+                ElevatorRouteHelper.InsertFloorInDirectionOrder(idleElevator, pendingRequest.Floor);
 
                 idleElevator.Direction = pendingRequest.Floor > idleElevator.CurrentFloor ? Direction.Up : Direction.Down;
                 pendingRequest.Status = HallRequestStatus.Assigned;
@@ -151,45 +152,6 @@ public class ElevatorManager
 
                 _logger.LogInformation($"Car {elevator.Id} is on floor {elevator.CurrentFloor} and {elevator.Direction?.ToString().ToLower()}.");
             }
-        }
-    }
-
-    private void InsertFloorInDirectionOrder(Elevator elevator, int floor)
-    {
-        if (!elevator.TargetFloors.Contains(floor))
-        {
-            elevator.TargetFloors.Add(floor);
-
-            if (elevator.Direction.HasValue && elevator.Direction.Value == Direction.Up)
-                elevator.TargetFloors.Sort();
-            else
-                // Sort descending for down direction or null (new assignment)
-                elevator.TargetFloors.Sort((a, b) => b.CompareTo(a));
-        }
-    }
-
-    /// <summary>
-    /// Returns true if this elevator is going to pass at (or stop at) requested floor in its current direction.
-    /// </summary>
-    /// <param name="elevator"></param>
-    /// <param name="requestFloor"></param>
-    /// <returns></returns>
-    private bool IsPassingFloor(Elevator elevator, int requestFloor)
-    {
-        if (elevator.Direction == null)
-        {
-            return false;
-        }
-
-        if (elevator.Direction == Direction.Up)
-        {
-            int highest = elevator.TargetFloors.Count > 0 ? Math.Max(elevator.CurrentFloor, elevator.TargetFloors.Max()) : elevator.CurrentFloor;
-            return requestFloor > elevator.CurrentFloor && requestFloor <= highest;
-        }
-        else
-        {
-            int lowest = elevator.TargetFloors.Count > 0 ? Math.Min(elevator.CurrentFloor, elevator.TargetFloors.Min()) : elevator.CurrentFloor;
-            return requestFloor < elevator.CurrentFloor && requestFloor >= lowest;
         }
     }
 
