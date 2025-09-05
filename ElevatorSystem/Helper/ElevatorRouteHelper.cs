@@ -6,8 +6,10 @@ public static class ElevatorRouteHelper
 {
     /// <summary>
     /// Insert a floor into the elevator's target list in proper direction order (no duplicates).
+    /// Ensures the elevator serves new enroute ("on the way") requests in the right direction and order, 
+    /// enabling real-world batching and minimizing wasted movement
     /// </summary>
-    public static void InsertFloorInDirectionOrder(Elevator elevator, int floor)
+    public static void InsertTargetFloorInDirectionOrder(Elevator elevator, int floor)
     {
         if (!elevator.TargetFloors.Contains(floor))
         {

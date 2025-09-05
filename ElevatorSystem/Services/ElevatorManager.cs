@@ -69,7 +69,7 @@ public class ElevatorManager
 
             if (passingElevator != null)
             {
-                ElevatorRouteHelper.InsertFloorInDirectionOrder(passingElevator, pendingRequest.Floor);
+                ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(passingElevator, pendingRequest.Floor);
 
                 pendingRequest.Status = HallRequestStatus.Assigned;
                 pendingRequest.AssignedElevatorId = passingElevator.Id;
@@ -85,7 +85,7 @@ public class ElevatorManager
 
             if (idleElevator != null)
             {
-                ElevatorRouteHelper.InsertFloorInDirectionOrder(idleElevator, pendingRequest.Floor);
+                ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(idleElevator, pendingRequest.Floor);
 
                 idleElevator.Direction = pendingRequest.Floor > idleElevator.CurrentFloor ? Direction.Up : Direction.Down;
                 pendingRequest.Status = HallRequestStatus.Assigned;
@@ -110,7 +110,7 @@ public class ElevatorManager
                 continue;
             }
 
-            // Always proceed to the next target in direction order (thanks to InsertFloorInDirectionOrder)
+            // Always proceed to the next target in direction order (thanks to InsertTargetFloorInDirectionOrder)
             var target = elevator.TargetFloors[0];
 
             if (elevator.CurrentFloor == target)

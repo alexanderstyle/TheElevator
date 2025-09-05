@@ -56,46 +56,46 @@ public class ElevatorRouteHelperTests
         Assert.False(ElevatorRouteHelper.IsPassingFloor(elevator, 6));
     }
     [Fact]
-    public void InsertFloor_NullDirection_SimplyAdds_NoSort()
+    public void InsertTargetFloor_NullDirection_SimplyAdds_NoSort()
     {
         var elevator = new Elevator(1) { Direction = null };
         elevator.TargetFloors.AddRange(new[] { 2, 1 });
 
-        ElevatorRouteHelper.InsertFloorInDirectionOrder(elevator, 3);
+        ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(elevator, 3);
 
         // Should just append 3 at the end: [2, 1, 3]
         Assert.Equal(new List<int> { 2, 1, 3 }, elevator.TargetFloors);
     }
 
     [Fact]
-    public void InsertFloor_UpDirection_SortsAscending_NoDuplicates()
+    public void InsertTargetFloor_UpDirection_SortsAscending_NoDuplicates()
     {
         var elevator = new Elevator(1) { Direction = Direction.Up };
         elevator.TargetFloors.AddRange(new[] { 3, 7 });
 
-        ElevatorRouteHelper.InsertFloorInDirectionOrder(elevator, 5);
+        ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(elevator, 5);
 
         Assert.Equal(new List<int> { 3, 5, 7 }, elevator.TargetFloors);
     }
 
     [Fact]
-    public void InsertFloor_DownDirection_SortsDescending_NoDuplicates()
+    public void InsertTargetFloor_DownDirection_SortsDescending_NoDuplicates()
     {
         var elevator = new Elevator(2) { Direction = Direction.Down };
         elevator.TargetFloors.AddRange(new[] { 7, 3 });
 
-        ElevatorRouteHelper.InsertFloorInDirectionOrder(elevator, 5);
+        ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(elevator, 5);
 
         Assert.Equal(new List<int> { 7, 5, 3 }, elevator.TargetFloors);
     }
 
     [Fact]
-    public void InsertFloor_Duplicate_NoChange()
+    public void InsertTargetFloor_Duplicate_NoChange()
     {
         var elevator = new Elevator(3) { Direction = null };
         elevator.TargetFloors.AddRange(new[] { 2, 1 });
 
-        ElevatorRouteHelper.InsertFloorInDirectionOrder(elevator, 2);
+        ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(elevator, 2);
 
         Assert.Equal(new List<int> { 2, 1 }, elevator.TargetFloors);
     }
