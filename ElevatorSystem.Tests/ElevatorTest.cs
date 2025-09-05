@@ -26,6 +26,8 @@ public class ElevatorTest
         Assert.Single(pending);
         Assert.Equal(5, pending[0].Floor);
         Assert.Equal(Direction.Down, pending[0].Direction);
+        Assert.Equal(HallRequestStatus.Pending, pending[0].Status);
+        Assert.Null(pending[0].AssignedElevatorId);
     }
 
     [Fact]
@@ -54,6 +56,7 @@ public class ElevatorTest
 
         // All statuses should be Pending.
         Assert.All(pending, r => Assert.Equal(HallRequestStatus.Pending, r.Status));
+        Assert.All(pending, r => Assert.Null(r.AssignedElevatorId));
     }
 
     [Fact]
