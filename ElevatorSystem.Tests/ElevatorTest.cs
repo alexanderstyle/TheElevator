@@ -132,6 +132,7 @@ public class ElevatorTest
         var pending = manager.GetPendingRequests();
 
         // Assert
+        Assert.Equal(2, pending.Count); // Only 2 should be added, not the duplicate
         Assert.Equal(5, pending[0].Floor);
         Assert.Equal(8, pending[1].Floor);
     }
@@ -151,9 +152,9 @@ public class ElevatorTest
         var assignedElevator = elevators.FirstOrDefault(e => e.TargetFloors.Contains(5));
 
         // Assert
-        Assert.Equal(4, elevators.Count);
         Assert.NotNull(assignedElevator);
         Assert.Equal(5, assignedElevator.TargetFloors.First());
+        Assert.Equal(1, assignedElevator.Id);
 
         // No more pending requests, but there should be assigned.
         Assert.Empty(manager.GetPendingRequests());
@@ -164,7 +165,7 @@ public class ElevatorTest
     public void AssignRequests_Should_assign_6_request_to_elevator_1()
     {
         // Arrange
-        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 1);
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
 
         // Act
         manager.ReceiveRequest(new HallRequest(2, Direction.Up));
@@ -174,7 +175,6 @@ public class ElevatorTest
         manager.ReceiveRequest(new HallRequest(6, Direction.Up));
         manager.ReceiveRequest(new HallRequest(7, Direction.Up));
 
-        var pending = manager.GetPendingRequests();
         manager.AssignRequests();
 
         var assigned = manager.GetAssignedRequests();
@@ -182,6 +182,10 @@ public class ElevatorTest
         // Assert
         // Are all assigned to elevator 1?
         Assert.Equal(6, assigned.Count);
+        Assert.All(assigned, x => Assert.Equal(1, x.AssignedElevatorId));
+
+        // Is it ordered in the target floors?
+        Assert.Equal(new List<int> { 2, 3, 4, 5, 6, 7 }, manager.GetElevators().Single().TargetFloors);
     }
 
     [Fact]
