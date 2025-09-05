@@ -96,6 +96,9 @@ public class ElevatorManager
         }
     }
 
+    /// <summary>
+    /// Increment or decrement each elevator's current floor toward its next target (if any).
+    /// </summary>
     public void Step()
     {
         foreach (var elevator in _elevators)
