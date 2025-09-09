@@ -16,7 +16,7 @@ public class ElevatorAssignSimulator : BackgroundService
     private readonly ElevatorManager _manager;
 
     // Default interval, in seconds our elevator operations logic will fire.
-    private readonly long _defaultTickIntervalSeconds = 2;
+    private readonly long _defaultTickIntervalSeconds = 5;
 
     private readonly Random randomizer = new Random();
 

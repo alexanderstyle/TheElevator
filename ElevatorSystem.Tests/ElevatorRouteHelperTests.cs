@@ -7,7 +7,7 @@ namespace ElevatorSystem.Tests;
 public class ElevatorRouteHelperTests
 {
     [Fact]
-    public void IsPassingFloor_UpDirection_PassesFloorsAboveUpToHighestTarget()
+    public void IsPassingFloorExpectElevatorWillPassOnAFloorGoingUpToHighestTargetFloor()
     {
         var elevator = new Elevator(1)
         {
@@ -26,7 +26,7 @@ public class ElevatorRouteHelperTests
     }
 
     [Fact]
-    public void IsPassingFloor_DownDirection_PassesFloorsBelowDownToLowestTarget()
+    public void IsPassingFloorExpectElevatorWillPassOnAFloorGoingDownToLowestTargetFloor()
     {
         var elevator = new Elevator(2)
         {
@@ -45,7 +45,7 @@ public class ElevatorRouteHelperTests
     }
 
     [Fact]
-    public void IsPassingFloor_Idle_ReturnsFalse()
+    public void IsPassingFloorShouldReturnFalseWhenIdle()
     {
         var elevator = new Elevator(3)
         {
@@ -56,7 +56,7 @@ public class ElevatorRouteHelperTests
         Assert.False(ElevatorRouteHelper.IsPassingFloor(elevator, 6));
     }
     [Fact]
-    public void InsertTargetFloor_NullDirection_SimplyAdds_NoSort()
+    public void InsertTargetFloorNullDirectionShouldAddFloorNoSort()
     {
         var elevator = new Elevator(1) { Direction = null };
         elevator.TargetFloors.AddRange(new[] { 2, 1 });
@@ -68,7 +68,7 @@ public class ElevatorRouteHelperTests
     }
 
     [Fact]
-    public void InsertTargetFloor_UpDirection_SortsAscending_NoDuplicates()
+    public void InsertTargetFloorUpDirectionShouldSortsAscendingNoDuplicates()
     {
         var elevator = new Elevator(1) { Direction = Direction.Up };
         elevator.TargetFloors.AddRange(new[] { 3, 7 });
@@ -79,7 +79,7 @@ public class ElevatorRouteHelperTests
     }
 
     [Fact]
-    public void InsertTargetFloor_DownDirection_SortsDescending_NoDuplicates()
+    public void InsertTargetFloorDownDirectionShouldSortsDescendingNoDuplicates()
     {
         var elevator = new Elevator(2) { Direction = Direction.Down };
         elevator.TargetFloors.AddRange(new[] { 7, 3 });
@@ -90,7 +90,7 @@ public class ElevatorRouteHelperTests
     }
 
     [Fact]
-    public void InsertTargetFloor_Duplicate_NoChange()
+    public void InsertTargetFloorDuplicateExpectNoChange()
     {
         var elevator = new Elevator(3) { Direction = null };
         elevator.TargetFloors.AddRange(new[] { 2, 1 });

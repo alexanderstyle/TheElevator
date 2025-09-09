@@ -43,19 +43,19 @@ public static class ElevatorRouteHelper
 
         if (elevator.Direction == Direction.Up)
         {
-            int highest = elevator.TargetFloors.Count > 0
+            int highestFloor = elevator.TargetFloors.Count > 0
                 ? Math.Max(elevator.CurrentFloor, elevator.TargetFloors.Max())
                 : elevator.CurrentFloor;
 
-            return requestFloor > elevator.CurrentFloor && requestFloor <= highest;
+            return requestFloor > elevator.CurrentFloor && requestFloor <= highestFloor;
         }
         else // Direction.Down
         {
-            int lowest = elevator.TargetFloors.Count > 0
+            int lowestFloor = elevator.TargetFloors.Count > 0
                 ? Math.Min(elevator.CurrentFloor, elevator.TargetFloors.Min())
                 : elevator.CurrentFloor;
 
-            return requestFloor < elevator.CurrentFloor && requestFloor >= lowest;
+            return requestFloor < elevator.CurrentFloor && requestFloor >= lowestFloor;
         }
     }
 }

@@ -25,7 +25,7 @@ public class ElevatorApiController : ControllerBase
     [Route("status")]
     public async Task<IActionResult> GetStatus()
     {
-        var pendingRequests = _manager.GetPendingRequests()
+        var pendingRequests = _manager.GetAllPendingRequests()
             .Select(r => new { r.Floor, Direction = r.Direction.ToString(), r.Status, r.AssignedElevatorId })
             .ToList();
         var elevators = _manager.GetElevators();

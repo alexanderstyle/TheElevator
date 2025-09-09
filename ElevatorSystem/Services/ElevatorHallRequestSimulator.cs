@@ -57,10 +57,9 @@ public class ElevatorHallRequestSimulator : BackgroundService
             else
                 direction = randomizer.Next(0, 2) == 0 ? Direction.Up : Direction.Down;
 
-            _logger.LogInformation($"\"{direction}\" request on floor {floor} auto-generated. This is request {_requestCount}.");
-
             // Create and submit the request.
             var request = new HallRequest(floor, direction);
+
             _manager.ReceiveRequest(request);
 
             _requestCount++;
