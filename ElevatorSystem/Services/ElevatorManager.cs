@@ -1,22 +1,12 @@
-﻿using ElevatorSystem.Models;
+﻿using ElevatorSystem.Helper;
+using ElevatorSystem.Models;
+using Microsoft.Extensions.FileSystemGlobbing;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
-
-public enum HallRequestStatus { Pending, Assigned }
-
-public class HallRequest
-{
-    public int Floor { get; set; }
-    public Direction Direction { get; set; }
-    public HallRequestStatus Status { get; set; } = HallRequestStatus.Pending;
-    public int? AssignedElevatorId { get; set; }
-    public HallRequest(int floor, Direction dir)
-    {
-        Floor = floor;
-        Direction = dir;
-    }
-}
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 public class ElevatorManager
 {
@@ -24,7 +14,6 @@ public class ElevatorManager
     private readonly List<HallRequest> _hallRequests = new();
     private readonly List<Elevator> _elevators;
     private readonly int _floors;
-    private readonly object _lock = new();
 
     public int Floors => _floors;
 
@@ -67,50 +56,18 @@ public class ElevatorManager
 
     public void AssignRequests()
     {
-        var pendingRequests = _hallRequests
-            .Where(r => r.Status == HallRequestStatus.Pending)
-            .OrderBy(r => r.Floor)
-            .ToList();
+        BatchOnTheWayRequestsOnGoingUpElevators();
 
-        foreach (var pendingRequest in pendingRequests)
-        {
-            // Try to batch with any moving elevator in the same direction that will pass requested floor.
-            var passingElevator = _elevators
-                .Where(e =>
-                    e.Direction == pendingRequest.Direction &&
-                    IsPassingFloor(e, pendingRequest.Floor))
-                .OrderBy(e => Math.Abs(e.CurrentFloor - pendingRequest.Floor))
-                .FirstOrDefault();
+        BatchPendingUpRequestsToIdleElevator();
 
-            if (passingElevator != null)
-            {
-                InsertFloorInDirectionOrder(passingElevator, pendingRequest.Floor);
+        BatchPendingDownRequestsToIdleElevator();
 
-                pendingRequest.Status = HallRequestStatus.Assigned;
-                pendingRequest.AssignedElevatorId = passingElevator.Id;
-
-                continue; 
-            }
-
-            // Otherwise, assign to nearest idle elevator
-            var idleElevator = _elevators
-                .Where(e => e.IsIdle)
-                .OrderBy(e => Math.Abs(e.CurrentFloor - pendingRequest.Floor))
-                .FirstOrDefault();
-
-            if (idleElevator != null)
-            {
-                InsertFloorInDirectionOrder(idleElevator, pendingRequest.Floor);
-
-                idleElevator.Direction = pendingRequest.Floor > idleElevator.CurrentFloor ? Direction.Up : Direction.Down;
-                pendingRequest.Status = HallRequestStatus.Assigned;
-                pendingRequest.AssignedElevatorId = idleElevator.Id;
-            }
-
-            // No candidate elevator found, will try again next time.
-        }
+        // TODO: Add more advanced use cases or rules/ policy handlers for assignment as needed.
     }
 
+    /// <summary>
+    /// Increment or decrement each elevator's current floor toward its next target (if any).
+    /// </summary>
     public void Step()
     {
         foreach (var elevator in _elevators)
@@ -122,7 +79,7 @@ public class ElevatorManager
                 continue;
             }
 
-            // Always proceed to the next target in direction order (thanks to InsertFloorInDirectionOrder)
+            // Always proceed to the next target in direction order (thanks to InsertTargetFloorInDirectionOrder)
             var target = elevator.TargetFloors[0];
 
             if (elevator.CurrentFloor == target)
@@ -170,53 +127,234 @@ public class ElevatorManager
         }
     }
 
-    private void InsertFloorInDirectionOrder(Elevator elevator, int floor)
-    {
-        if (!elevator.TargetFloors.Contains(floor))
-        {
-            elevator.TargetFloors.Add(floor);
-
-            if (elevator.Direction.HasValue && elevator.Direction.Value == Direction.Up)
-                elevator.TargetFloors.Sort();
-            else
-                // Sort descending for down direction or null (new assignment)
-                elevator.TargetFloors.Sort((a, b) => b.CompareTo(a));
-        }
-    }
-
-    /// <summary>
-    /// Returns true if this elevator going to pass (or stop at) this floor in its current direction.
-    /// </summary>
-    /// <param name="elevator"></param>
-    /// <param name="requestFloor"></param>
-    /// <returns></returns>
-    private bool IsPassingFloor(Elevator elevator, int requestFloor)
-    {
-        if (elevator.Direction == null)
-        {
-            return false;
-        }
-
-        if (elevator.Direction == Direction.Up)
-        {
-            int highest = elevator.TargetFloors.Count > 0 ? Math.Max(elevator.CurrentFloor, elevator.TargetFloors.Max()) : elevator.CurrentFloor;
-            return requestFloor > elevator.CurrentFloor && requestFloor <= highest;
-        }
-        else
-        {
-            int lowest = elevator.TargetFloors.Count > 0 ? Math.Min(elevator.CurrentFloor, elevator.TargetFloors.Min()) : elevator.CurrentFloor;
-            return requestFloor < elevator.CurrentFloor && requestFloor >= lowest;
-        }
-    }
-
     /// <summary>
     /// Get a snapshot of all elevator statuses (for controller/view)
     /// </summary>
     public List<Elevator> GetElevators() => _elevators.Select(e => new Elevator(e)).ToList();
 
-    public List<HallRequest> GetPendingRequests()
+    public List<HallRequest> GetAllPendingRequests()
         => _hallRequests.Where(x => x.Status == HallRequestStatus.Pending).ToList();
+
+    public List<HallRequest> GetPendingUpRequests()
+    => _hallRequests.Where(x => x.Status == HallRequestStatus.Pending && x.Direction == Direction.Up).ToList();
+
+    public List<HallRequest> GetPendingDownRequests()
+=> _hallRequests.Where(x => x.Status == HallRequestStatus.Pending && x.Direction == Direction.Down).ToList();
 
     public List<HallRequest> GetAssignedRequests()
         => _hallRequests.Where(x => x.Status == HallRequestStatus.Assigned).ToList();
+
+    public Elevator? GetClosestIdleElevatorForUpRequests()
+    {
+        Elevator? closestElevator = null;
+
+        // Get the idle elevator that is closest to the lowest pending request floor.
+        foreach (var request in GetPendingUpRequests())
+        {
+            int minDistance = int.MaxValue;
+
+            // Loop through each elevator to find the closest one
+            foreach (var elevator in _elevators.Where(e => e.IsIdle))
+            {
+                int currentDistance = Math.Abs(elevator.CurrentFloor - request.Floor);
+
+                if (currentDistance < minDistance)
+                {
+                    minDistance = currentDistance;
+
+                    // Choose that elevator.
+                    closestElevator = elevator;
+                }
+            }
+        }
+
+        return closestElevator;
+    }
+
+    public Elevator? GetClosestIdleElevatorForDownRequests()
+    {
+        Elevator? closestElevator = null;
+
+        // Get the idle elevator that is closest to the lowest pending request floor.
+        foreach (var request in GetPendingDownRequests())
+        {
+            int minDistance = int.MaxValue;
+
+            // Loop through each elevator to find the closest one
+            foreach (var elevator in _elevators.Where(e => e.IsIdle))
+            {
+                int currentDistance = Math.Abs(elevator.CurrentFloor - request.Floor);
+
+                if (currentDistance < minDistance)
+                {
+                    minDistance = currentDistance;
+
+                    // Choose that elevator.
+                    closestElevator = elevator;
+                }
+            }
+        }
+
+        return closestElevator;
+    }
+
+    private void BatchPendingUpRequestsToIdleElevator()
+    {
+        Elevator? closestElevator = null;
+
+        // Get all pending requests that are up and sort asc.
+        var pendingUpRequests = _hallRequests
+            .Where(x => x.Status == HallRequestStatus.Pending && x.Direction == Direction.Up)
+            .OrderBy(x => x.Floor)
+            .ToList();
+
+        closestElevator = GetClosestIdleElevatorForUpRequests();
+
+        // Impossible to have no closest elevator
+        if (closestElevator != null)
+        {
+            // Assign all pending requests to the closest elevator.
+            foreach (var r in pendingUpRequests)
+            {
+                ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(closestElevator, r.Floor);
+
+                r.Status = HallRequestStatus.Assigned;
+                r.AssignedElevatorId = closestElevator.Id;
+            }
+
+            closestElevator.Direction = Direction.Up;
+        }
+    }
+
+    private void BatchPendingDownRequestsToIdleElevator()
+    {
+        Elevator? closestElevator = null;
+
+        // Get all pending requests that are down and sort asc.
+        var pendingUpRequests = _hallRequests
+            .Where(x => x.Status == HallRequestStatus.Pending && x.Direction == Direction.Down)
+            .OrderByDescending(x => x.Floor) // Descending so we assign top to bottom floors.
+            .ToList();
+
+        closestElevator = GetClosestIdleElevatorForDownRequests();
+
+        // Impossible to have no closest elevator
+        if (closestElevator != null)
+        {
+            // Assign all pending requests to the closest elevator.
+            foreach (var r in pendingUpRequests)
+            {
+                ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(closestElevator, r.Floor);
+
+                r.Status = HallRequestStatus.Assigned;
+                r.AssignedElevatorId = closestElevator.Id;
+            }
+
+            closestElevator.Direction = Direction.Down;
+        }
+    }
+
+    /// <summary>
+    /// Use case: Going up elevator on floor 2. Up request 6 7 8. 6 7 8 added to target floors and elevator is on its way. 
+    /// On its way, new request on floor 4 5.
+    /// This method should assign all requests 4 5 6 7 9 on first elevator (going up) and should stop at each floor.
+    /// Once serviced, Step removes the floor on elevator target floors.
+    /// </summary>
+    private void BatchOnTheWayRequestsOnGoingUpElevators()
+    {
+        // Get all requests that have not been assigned yet (pending).
+        // If no more to service, just exit.
+        // Get going up elevators in order (not idle).
+        // (What is the closest elevator that can service the lowest floor request.)
+        // Get the closest elevator to the lowest requested floor.
+        // For each pending up, assign that closest elevator.
+        // Insert target floor in direction order.
+        // Set the elevator id of this to the assigned elevator id of the request.
+        // Set status to assigned.
+        // Set direction to up. (Still moving up).
+
+        var pendingRequests = _hallRequests
+                .Where(r => r.Status.Equals(HallRequestStatus.Pending) && r.Direction == Direction.Up)
+                .OrderBy(r => r.Floor)
+                .ToList();
+
+        // If no more to service, just exit.
+        if (!pendingRequests.Any())
+        {
+            return;
+        }
+
+        // (What is the closest elevator that can service the lowest floor requests.)
+        var lowestDistance = int.MaxValue;
+        Elevator? closest = null; ;
+
+        var upElevators = _elevators
+            .Where(e => e.Direction == Direction.Up)
+            .OrderBy(e => e.Id)
+            .ToList();
+
+        // Get the closest elevator moving up to the lowest floor up request.
+        foreach (var e in upElevators)
+        {
+            var lowestRequestedFloorGoingUp = pendingRequests
+                .First()
+                .Floor;
+
+            var distance = Math.Abs(lowestRequestedFloorGoingUp - e.CurrentFloor);
+
+            if (distance < lowestDistance)
+            {
+                lowestDistance = distance;
+
+                closest = e;
+            }
+        }
+
+        // We now have the closest elevator, assign it.
+        var pendingUp = _hallRequests
+            .Where(r => r.Status.Equals(HallRequestStatus.Pending) && r.Direction == Direction.Up)
+            .OrderBy(r => r.Floor)
+            .ToList();
+
+        foreach (var request in pendingUp)
+        {
+            if (closest != null)
+            {
+                ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(closest, request.Floor);
+
+                request.Status = HallRequestStatus.Assigned;
+                request.AssignedElevatorId = closest.Id;
+
+                _logger.LogInformation($"[Batching] Assigned on-the-way {request.Direction} request @ floor {request.Floor} to Elevator {closest.Id}");
+            }
+        }
+    }
+
+    // Test helper functions only
+    internal void ClearAndInjectRequests(List<HallRequest> requests)
+    {
+        _hallRequests.Clear();
+        _hallRequests.AddRange(requests);
+    }
+
+    internal Elevator GetActualElevatorById(int id) => _elevators.First(e => e.Id == id);
+
+    internal void SetElevatorCurrentFloor(int elevatorId, int floor)
+    {
+        var elevator = _elevators
+            .Where(e => e.Id == elevatorId)
+            .Single();
+
+        elevator.CurrentFloor = floor;
+    }
+
+    internal void SetElevatorState(int elevatorId, int currentFloor, Direction direction)
+    {
+        var elevator = _elevators
+            .Where(e => e.Id == elevatorId)
+            .Single();
+
+        elevator.CurrentFloor = currentFloor;
+        elevator.Direction = direction;
+    }
 }

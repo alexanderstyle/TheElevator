@@ -34,7 +34,7 @@ namespace ElevatorSystem.Controllers
                 TargetFloors = e.TargetFloors.ToList(),
                 IsIdle = e.IsIdle
             }).ToList();
-            var pendingRequestsViewModel = _manager.GetPendingRequests().Select(r => new ElevatorRequestViewModel
+            var pendingRequestsViewModel = _manager.GetAllPendingRequests().Select(r => new ElevatorRequestViewModel
             {
                 Floor = r.Floor,
                 Direction = r.Direction.ToString()
