@@ -16,6 +16,7 @@ public class ElevatorManager
     private readonly int _floors;
 
     public int Floors => _floors;
+    public int OnloadingDelayInSeconds { get; set; } = 10;
 
     public ElevatorManager(ILogger<ElevatorManager> logger, 
         int floors = 10, 
@@ -27,8 +28,7 @@ public class ElevatorManager
                                .Select(i => new Elevator(i, 1)).ToList();
     }
 
-    // -- Step 1: Human hall pendingRequest, prevents duplicates (same floor+direction)
-    public void ReceiveRequest(HallRequest request)
+    public async Task ReceiveRequestAsync(HallRequest request)
     {
         // Cannot go up from top floor
         if (request.Floor == Floors && request.Direction == Direction.Up)
@@ -52,9 +52,11 @@ public class ElevatorManager
         _hallRequests.Add(new HallRequest(request.Floor, request.Direction));
 
         _logger.LogInformation($"\"{request.Direction}\" request on floor {request.Floor} received.");
+
+        await Task.CompletedTask;
     }
 
-    public void AssignRequests()
+    public async Task AssignRequestAsync()
     {
         BatchOnTheWayRequestsOnGoingUpElevators();
 
@@ -63,12 +65,14 @@ public class ElevatorManager
         BatchPendingDownRequestsToIdleElevator();
 
         // TODO: Add more advanced use cases or rules/ policy handlers for assignment as needed.
+
+        await Task.CompletedTask;
     }
 
     /// <summary>
     /// Increment or decrement each elevator's current floor toward its next target (if any).
     /// </summary>
-    public void Step()
+    public async Task StepAsync()
     {
         foreach (var elevator in _elevators)
         {
@@ -84,6 +88,11 @@ public class ElevatorManager
 
             if (elevator.CurrentFloor == target)
             {
+                // Simulate delay due to onloading passengers.
+                await Task.Delay(new TimeSpan(0, 0, OnloadingDelayInSeconds));
+
+                _logger.LogInformation($"Onloading for {OnloadingDelayInSeconds} seconds. Car {elevator.Id} is on floor {elevator.CurrentFloor} and {(elevator.Direction?.ToString().ToLower() ?? "idle")}.");
+
                 // Arrived at target floor!
                 elevator.TargetFloors.RemoveAt(0);
 
@@ -255,10 +264,10 @@ public class ElevatorManager
     }
 
     /// <summary>
-    /// Use case: Going up elevator on floor 2. Up request 6 7 8. 6 7 8 added to target floors and elevator is on its way. 
+    /// Use case: eg: Going up elevator on floor 2. Up request 6 7 8. 6 7 8 added to target floors and elevator is on its way. 
     /// On its way, new request on floor 4 5.
     /// This method should assign all requests 4 5 6 7 9 on first elevator (going up) and should stop at each floor.
-    /// Once serviced, Step removes the floor on elevator target floors.
+    /// Once serviced, StepAsync removes the floor on elevator target floors.
     /// </summary>
     private void BatchOnTheWayRequestsOnGoingUpElevators()
     {

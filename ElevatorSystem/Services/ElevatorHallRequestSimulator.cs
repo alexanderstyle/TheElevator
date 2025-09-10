@@ -60,7 +60,7 @@ public class ElevatorHallRequestSimulator : BackgroundService
             // Create and submit the request.
             var request = new HallRequest(floor, direction);
 
-            _manager.ReceiveRequest(request);
+            await _manager.ReceiveRequestAsync(request);
 
             _requestCount++;
         }

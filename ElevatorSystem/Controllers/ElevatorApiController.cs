@@ -41,9 +41,9 @@ public class ElevatorApiController : ControllerBase
     [Obsolete("Manual request via this api will be removed in future versions. Use auto-generated requests using background services.")]
     [HttpPost]
     [Route("request")]
-    public IActionResult RequestElevator([FromBody] HallRequest request)
+    public async Task<IActionResult> RequestElevator([FromBody] HallRequest request)
     {
-        _manager.ReceiveRequest(request);
+        await _manager.ReceiveRequestAsync(request);
 
         return Ok(new { message = "Api elevator request received" });
     }
