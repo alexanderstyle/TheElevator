@@ -7,8 +7,7 @@ namespace ElevatorSystem.Services;
 /// A background service that manages the operation of elevators by periodically processing requests and moving
 /// elevators. This acts as our simulation "engine" for moving elevator cars.
 /// </summary>
-/// <remarks>This service runs continuously in the background, invoking the <see
-/// cref="ElevatorManager.AssignRequests"/> method to assign pending requests and the <see cref="ElevatorManager.Step"/>
+/// <remarks>This service runs continuously in the background, invoking the <see cref="ElevatorManager.StepAsync"/>
 /// method to move elevators at regular intervals. The interval between ticks is set to 10 seconds by default.</remarks>
 public class ElevatorStepSimulator : BackgroundService
 {
@@ -35,7 +34,7 @@ public class ElevatorStepSimulator : BackgroundService
         {
             try
             {
-                _manager.Step();
+                await _manager.StepAsync();
             }
             catch (Exception ex)
             {
