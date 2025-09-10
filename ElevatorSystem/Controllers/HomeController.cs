@@ -26,26 +26,31 @@ namespace ElevatorSystem.Controllers
         public async Task<IActionResult> Index()
         {
             var floors = _manager.Floors;
-            var elevatorsViewModel = _manager.GetElevators().Select(e => new ElevatorViewModel
-            {
-                Id = e.Id,
-                CurrentFloor = e.CurrentFloor,
-                Direction = e.Direction?.ToString() ?? "", // null = idle
-                TargetFloors = e.TargetFloors.ToList(),
-                IsIdle = e.IsIdle
-            }).ToList();
-            var pendingRequestsViewModel = _manager.GetAllPendingRequests().Select(r => new ElevatorRequestViewModel
-            {
-                Floor = r.Floor,
-                Direction = r.Direction.ToString()
-            }).ToList();
-            // For each elevator, build a list of its target requests (away from current floor)
+
+            var elevatorsViewModel = _manager.GetElevators()
+                .Select(e => new ElevatorViewModel
+                {
+                    Id = e.Id,
+                    CurrentFloor = e.CurrentFloor,
+                    Direction = e.Direction?.ToString() ?? "", // null = idle
+                    TargetFloors = e.TargetFloors.ToList(),
+                    IsIdle = e.IsIdle
+                })
+                .ToList();
+
+            var allRequestsViewModel = _manager.GetAllRequests()
+                .Select(r => new HallRequestViewModel
+                {
+                    Floor = r.Floor,
+                    Direction = r.Direction.ToString()
+                })
+                .ToList();
 
             var model = new ElevatorManagerViewModel
             {
                 Floors = floors,
                 Elevators = elevatorsViewModel,
-                PendingRequests = pendingRequestsViewModel
+                HallRequests = allRequestsViewModel
             };
 
             await Task.CompletedTask;

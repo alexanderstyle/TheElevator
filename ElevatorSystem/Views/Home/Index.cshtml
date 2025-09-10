@@ -10,14 +10,14 @@
     <thead class="table-dark">
         <tr>
             <th>Floor</th>
-            <th>Pending Requests</th>
+            <th>Requests</th>
             @foreach (var elevator in Model.Elevators)
             {
                 <th>Elevator @elevator.Id</th>
             }
         </tr>
     </thead>
-    <tbody>
+    <tbody class="datatable">
         @foreach (var floor in floorList)
         {
             <tr>
@@ -25,7 +25,7 @@
                 <td>
                     @{
                         // Find pending requests for this floor
-                        var floorRequests = Model.PendingRequests
+                        var floorRequests = Model.HallRequests
                             .Where(r => r.Floor == floor)
                             .Select(r => r.Direction)
                             .Distinct()
@@ -81,6 +81,7 @@
                     console.log('Dashboard updated', data);
 
                     // TODO: Update the table based on the returned data.
+
                 }
             });
         }
