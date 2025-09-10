@@ -58,11 +58,11 @@ public class ElevatorManager
 
     public async Task AssignRequestAsync()
     {
-        BatchOnTheWayRequestsOnGoingUpElevators();
+        await BatchOnTheWayRequestsOnGoingUpElevatorsAsync();
 
-        BatchPendingUpRequestsToIdleElevator();
+        await BatchPendingUpRequestsToIdleElevatorAsync();
 
-        BatchPendingDownRequestsToIdleElevator();
+        await BatchPendingDownRequestsToIdleElevatorAsync();
 
         // TODO: Add more advanced use cases or rules/ policy handlers for assignment as needed.
 
@@ -210,7 +210,7 @@ public class ElevatorManager
         return closestElevator;
     }
 
-    private void BatchPendingUpRequestsToIdleElevator()
+    private async Task BatchPendingUpRequestsToIdleElevatorAsync()
     {
         Elevator? closestElevator = null;
 
@@ -236,9 +236,11 @@ public class ElevatorManager
 
             closestElevator.Direction = Direction.Up;
         }
+
+        await Task.CompletedTask;
     }
 
-    private void BatchPendingDownRequestsToIdleElevator()
+    private async Task BatchPendingDownRequestsToIdleElevatorAsync()
     {
         Elevator? closestElevator = null;
 
@@ -264,6 +266,8 @@ public class ElevatorManager
 
             closestElevator.Direction = Direction.Down;
         }
+
+        await Task.CompletedTask;
     }
 
     /// <summary>
@@ -272,7 +276,7 @@ public class ElevatorManager
     /// This method should assign all requests 4 5 6 7 9 on first elevator (going up) and should stop at each floor.
     /// Once serviced, StepAsync removes the floor on elevator target floors.
     /// </summary>
-    private void BatchOnTheWayRequestsOnGoingUpElevators()
+    private async Task BatchOnTheWayRequestsOnGoingUpElevatorsAsync()
     {
         // Get all requests that have not been assigned yet (pending).
         // If no more to service, just exit.
@@ -340,6 +344,8 @@ public class ElevatorManager
                 _logger.LogInformation($"[Batching] Assigned on-the-way {request.Direction} request @ floor {request.Floor} to Elevator {closest.Id}");
             }
         }
+
+        await Task.CompletedTask;
     }
 
     // Test helper functions only
