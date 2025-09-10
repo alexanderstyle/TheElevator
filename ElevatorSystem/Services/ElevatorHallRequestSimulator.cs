@@ -19,7 +19,7 @@ public class ElevatorHallRequestSimulator : BackgroundService
     private readonly int _floorCount;
     private readonly int _maxRequests;
     private int _requestCount = 0;
-    private readonly long _defaultTickIntervalSeconds = 1;
+    private readonly long _defaultTickIntervalSeconds = 5;
 
 
     public ElevatorHallRequestSimulator(ILogger<ElevatorHallRequestSimulator> logger,

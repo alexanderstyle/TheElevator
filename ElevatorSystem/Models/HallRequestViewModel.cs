@@ -1,13 +1,13 @@
 ﻿namespace ElevatorSystem.Models;
 
-public class ElevatorRequestViewModel
+public class HallRequestViewModel
 {
     public int Floor { get; set; }
     public string Direction { get; set; } = string.Empty;
 
-    public ElevatorRequestViewModel() { }
+    public HallRequestViewModel() { }
 
-    public ElevatorRequestViewModel(HallRequest request)
+    public HallRequestViewModel(HallRequest request)
     {
         Floor = request.Floor;
         Direction = request.Direction.ToString();

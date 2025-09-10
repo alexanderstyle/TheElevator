@@ -141,6 +141,9 @@ public class ElevatorManager
     /// </summary>
     public List<Elevator> GetElevators() => _elevators.Select(e => new Elevator(e)).ToList();
 
+    public List<HallRequest> GetAllRequests()
+    => _hallRequests.ToList();
+
     public List<HallRequest> GetAllPendingRequests()
         => _hallRequests.Where(x => x.Status == HallRequestStatus.Pending).ToList();
 

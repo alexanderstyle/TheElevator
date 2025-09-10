@@ -25,14 +25,15 @@ public class ElevatorApiController : ControllerBase
     [Route("status")]
     public async Task<IActionResult> GetStatus()
     {
-        var pendingRequests = _manager.GetAllPendingRequests()
-            .Select(r => new { r.Floor, Direction = r.Direction.ToString(), r.Status, r.AssignedElevatorId })
+        var hallRequests = _manager.GetAllRequests()
+            .Select(r => new { r.Floor, Direction = r.Direction.ToString(), Status = r.Status.ToString(), r.AssignedElevatorId })
             .ToList();
-        var elevators = _manager.GetElevators();
+        var elevators = _manager.GetElevators()
+            .Select(e => new { e.Id, e.CurrentFloor, direction = e.Direction.ToString(), e.TargetFloors, isIdle = e.IsIdle.ToString() });
 
         await Task.CompletedTask;
 
-        return Ok(new { floors = _manager.Floors, pendingRequests = pendingRequests, elevators = elevators });
+        return Ok(new { floors = _manager.Floors, allRequests = hallRequests, elevators = elevators });
     }
 
     /// <summary>
