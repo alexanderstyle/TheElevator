@@ -58,17 +58,9 @@ public class ElevatorManager
 
     public async Task AssignRequestAsync()
     {
-        //BatchOnTheWayRequestsOnGoingUpElevators();
+        await AssignUpRequestsAsync();
 
-        //BatchPendingUpRequestsToIdleElevator();
-
-        //BatchPendingDownRequestsToIdleElevator();
-
-        // TODO: Add more advanced use cases or rules/ policy handlers for assignment as needed.
-
-        AssignUpRequestsToMovingUpOrIdleElevatorThatIsBelowLowestUpRequestedFloor();
-
-        AssignDownRequestsToMovingDownOrIdleElevatorThatIsAboveHighestDownRequestedFloor();
+        await AssignDownRequestsAsync();
 
         await Task.CompletedTask;
     }
@@ -237,9 +229,10 @@ public class ElevatorManager
     /// General flow
     /// Get all pending requests
     /// Get candidate elevator
+    /// Assign up requests to moving up or idle elevator that is below lowest up requested floor.
     /// Assign
     /// </summary>
-    private void AssignUpRequestsToMovingUpOrIdleElevatorThatIsBelowLowestUpRequestedFloor()
+    private async Task AssignUpRequestsAsync()
     {
         // Get all pendingDownRequests that are going up -> [5 6 7]. Sort asc. Get the lowest floor request -> 5. 
         // Get all elevators that are moving up or idle that can pass that lowest floor -> elevators 1 to 5.
@@ -302,12 +295,14 @@ public class ElevatorManager
                 pending.Status = HallRequestStatus.Assigned;
             }
         }
+
+        await Task.CompletedTask;
     }
 
     /// <summary>
-    /// Assign an elevator to all down requests where the elevator is stationed or moving down above the down requested floors.
+    /// Assign an elevator to all down requests where the elevator is stationed or moving down above the highest down requested floors.
     /// </summary>
-    private void AssignDownRequestsToMovingDownOrIdleElevatorThatIsAboveHighestDownRequestedFloor()
+    private async Task AssignDownRequestsAsync()
     {
         var pendingDownRequests = _hallRequests
             .Where(x => x.Status == HallRequestStatus.Pending && x.Direction == Direction.Down)
@@ -363,6 +358,8 @@ public class ElevatorManager
                 pending.Status = HallRequestStatus.Assigned;
             }
         }
+
+        await Task.CompletedTask;
     }
 
 
