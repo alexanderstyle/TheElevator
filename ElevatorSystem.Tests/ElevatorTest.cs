@@ -154,6 +154,7 @@ public class ElevatorTest
         manager.SetElevatorState(3, 1, Direction.Up);
         manager.SetElevatorState(4, 1, null);
 
+        // Act
         await manager.AssignRequestAsync();
 
         var assigned = manager.GetAssignedRequests();
@@ -184,6 +185,7 @@ public class ElevatorTest
         manager.SetElevatorState(3, 10, Direction.Down);
         manager.SetElevatorState(4, 1, null);
 
+        // Act
         await manager.AssignRequestAsync();
 
         var assigned = manager.GetAssignedRequests();
@@ -228,172 +230,4 @@ public class ElevatorTest
         Assert.Contains(5, manager.GetElevators().First().TargetFloors); // still going to 5
         Assert.Equal(new List<int> { 5, 6, 7 }, manager.GetElevators().First().TargetFloors); // No change targets
     }
-
-    //[Fact(Skip = "New naive implementations but reuse this")]
-    //public async Task StepAsyncShouldRemoveTargetWhenArrived()
-    //{
-    //    // Arrange
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 1);
-    //    var request = new HallRequest(2, Direction.Up);
-    //    await manager.ReceiveRequestAsync(request);
-    //    await manager.AssignRequestAsync();
-
-    //    var elevator = manager.GetElevators().Single();
-    //    elevator.CurrentFloor = 1;
-
-    //    // Remove delay in onloading during tests.
-    //    manager.OnloadingDelayInSeconds = 0;
-
-    //    // Act - move one step to floor 2
-    //    await manager.StepAsync(); // Should move from 1 to 2
-    //    elevator = manager.GetElevators().Single();
-
-    //    Assert.Equal(2, elevator.CurrentFloor);
-
-    //    // Next step should "arrive" and dequeue the target floor
-    //    await manager.StepAsync();
-    //    elevator = manager.GetElevators().Single();
-    //    Assert.Empty(elevator.TargetFloors);
-    //    Assert.Null(elevator.Direction);
-    //}
-
-    //[Fact(Skip = "New naive implementations but reuse this")]
-    //public async Task StepAsyncShouldRemoveTargetWhenArrivedMultipleElevators()
-    //{
-    //    // Arrange: 4 elevators, both at floor 1, requests for floor 2 and 3
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-    //    var request1 = new HallRequest(2, Direction.Up);
-    //    var request2 = new HallRequest(3, Direction.Up);
-    //    await manager.ReceiveRequestAsync(request1);
-    //    await manager.ReceiveRequestAsync(request2);
-    //    await manager.AssignRequestAsync();
-
-    //    // Simulate steps until all targets are reached
-    //    var elevators = manager.GetElevators();
-
-    //    // Remove delay in onloading during tests.
-    //    manager.OnloadingDelayInSeconds = 0;
-
-    //    // Keep stepping until all elevators have no targets
-    //    int maxLoops = 10; // Prevent infinite loop in case of bug
-    //    int loops = 0;
-    //    while (elevators.Any(e => e.TargetFloors.Any()) && loops++ < maxLoops)
-    //    {
-    //        await manager.StepAsync();
-    //        elevators = manager.GetElevators();
-    //    }
-
-    //    // Assert: Each elevator at its assigned destination and target queue empty
-    //    foreach (var elevator in elevators)
-    //    {
-    //        // If elevator was assigned a floor, it should be there, and have no targets left
-    //        if (elevator.CurrentFloor == 2 || elevator.CurrentFloor == 3)
-    //        {
-    //            Assert.Empty(elevator.TargetFloors);
-    //            Assert.Null(elevator.Direction);
-    //        }
-    //        else
-    //        {
-    //            // Elevators not assigned a target should be idle on floor 1
-    //            Assert.Equal(1, elevator.CurrentFloor);
-    //            Assert.Empty(elevator.TargetFloors);
-    //            Assert.Null(elevator.Direction);
-    //        }
-    //    }
-    //}
-
-    //[Fact(Skip = "New naive implementations")]
-    //public async Task GetClosestIdleElevatorBelowUpRequestsShouldReturnClosestElevator()
-    //{
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-
-    //    await manager.ReceiveRequestAsync(new HallRequest(3, Direction.Up));
-    //    await manager.ReceiveRequestAsync(new HallRequest(4, Direction.Up));
-    //    await manager.ReceiveRequestAsync(new HallRequest(5, Direction.Up));
-
-    //    // Should return 3.
-    //    manager.SetElevatorCurrentFloor(1, 3);
-    //    manager.SetElevatorCurrentFloor(2, 2);
-    //    manager.SetElevatorCurrentFloor(3, 1);
-    //    manager.SetElevatorCurrentFloor(4, 1);
-
-    //    var closest = manager.GetClosestIdleElevatorForUpRequests();
-
-    //    // Assert
-    //    Assert.NotNull(closest);
-    //    Assert.Equal(1, closest.Id);
-    //}
-
-    //[Fact(Skip = "New naive implementations")]
-    //public async Task GetClosestIdleElevatorBelowReorderedUpRequestsShouldReturnClosestElevator()
-    //{
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-
-    //    await manager.ReceiveRequestAsync(new HallRequest(3, Direction.Up));
-    //    await manager.ReceiveRequestAsync(new HallRequest(4, Direction.Up));
-    //    await manager.ReceiveRequestAsync(new HallRequest(5, Direction.Up));
-
-    //    // Should return 3.
-    //    manager.SetElevatorCurrentFloor(1, 3);
-    //    manager.SetElevatorCurrentFloor(2, 2);
-    //    manager.SetElevatorCurrentFloor(3, 1);
-    //    manager.SetElevatorCurrentFloor(4, 1);
-
-    //    var closest = manager.GetClosestIdleElevatorForUpRequests();
-
-    //    // Assert
-    //    Assert.NotNull(closest);
-    //    Assert.Equal(1, closest.Id);
-    //}
-
-    //[Fact(Skip = "New naive implementations")]
-    //public async Task GetClosestIdleElevatorAboveDownRequestsShouldReturnClosestElevator()
-    //{
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-
-    //    await manager.ReceiveRequestAsync(new HallRequest(3, Direction.Down));
-    //    await manager.ReceiveRequestAsync(new HallRequest(4, Direction.Down));
-    //    await manager.ReceiveRequestAsync(new HallRequest(5, Direction.Down));
-
-    //    // Should return 7.
-    //    manager.SetElevatorCurrentFloor(1, 7);
-    //    manager.SetElevatorCurrentFloor(2, 8);
-    //    manager.SetElevatorCurrentFloor(3, 9);
-    //    manager.SetElevatorCurrentFloor(4, 9);
-
-    //    var closest = manager.GetClosestIdleElevatorForDownRequests();
-
-    //    // Assert
-    //    Assert.NotNull(closest);
-    //    Assert.Equal(1, closest.Id);
-    //}
-
-    //[Fact(Skip = "New naive implementations")]
-    //public async Task GetClosestIdleElevatorAboveReorderedDownRequestsShouldReturnClosestElevator()
-    //{
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-
-    //    await manager.ReceiveRequestAsync(new HallRequest(3, Direction.Down));
-    //    await manager.ReceiveRequestAsync(new HallRequest(4, Direction.Down));
-    //    await manager.ReceiveRequestAsync(new HallRequest(5, Direction.Down));
-
-    //    // Should return 7.
-    //    manager.SetElevatorCurrentFloor(1, 9);
-    //    manager.SetElevatorCurrentFloor(2, 8);
-    //    manager.SetElevatorCurrentFloor(3, 7);
-    //    manager.SetElevatorCurrentFloor(4, 7);
-
-    //    var closest = manager.GetClosestIdleElevatorForDownRequests();
-
-    //    // Assert
-    //    Assert.NotNull(closest);
-    //    Assert.Equal(3, closest.Id);
-    //}
-
-    //[Fact]
-    //public async Task GetClosestIdleElevatorForDownRequestShouldAssignIdleDownElevator()
-    //{
-    //    var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
-
-    //}
 }
