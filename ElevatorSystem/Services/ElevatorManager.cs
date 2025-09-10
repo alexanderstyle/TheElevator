@@ -8,6 +8,8 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+namespace ElevatorSystem.Services;
+
 public class ElevatorManager
 {
     private readonly ILogger<ElevatorManager> _logger;
