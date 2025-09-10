@@ -29,33 +29,4 @@ public static class ElevatorRouteHelper
             // If idle: do not sort, just append.
         }
     }
-
-    /// <summary>
-    /// Returns true if the elevator is going to pass at (or stop at) requestFloor
-    /// in its current direction (Up: passes floors above; Down: passes floors below).
-    /// </summary>
-    public static bool IsPassingFloor(Elevator elevator, int requestFloor)
-    {
-        if (elevator.Direction == null)
-        {
-            return false;
-        }
-
-        if (elevator.Direction == Direction.Up)
-        {
-            int highestFloor = elevator.TargetFloors.Count > 0
-                ? Math.Max(elevator.CurrentFloor, elevator.TargetFloors.Max())
-                : elevator.CurrentFloor;
-
-            return requestFloor > elevator.CurrentFloor && requestFloor <= highestFloor;
-        }
-        else // Direction.Down
-        {
-            int lowestFloor = elevator.TargetFloors.Count > 0
-                ? Math.Min(elevator.CurrentFloor, elevator.TargetFloors.Min())
-                : elevator.CurrentFloor;
-
-            return requestFloor < elevator.CurrentFloor && requestFloor >= lowestFloor;
-        }
-    }
 }

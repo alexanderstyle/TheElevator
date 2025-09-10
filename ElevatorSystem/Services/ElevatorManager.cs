@@ -291,7 +291,8 @@ public class ElevatorManager
         {
             foreach (var pending in pendingUpRequests)
             {
-                closestElevator.TargetFloors.Add(pending.Floor);
+                ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(closestElevator, pending.Floor);
+
                 closestElevator.Direction = Direction.Up;
                 pending.AssignedElevatorId = closestElevator.Id;
                 pending.Status = HallRequestStatus.Assigned;
@@ -354,7 +355,8 @@ public class ElevatorManager
         {
             foreach (var pending in pendingDownRequests)
             {
-                closestElevator.TargetFloors.Add(pending.Floor);
+                ElevatorRouteHelper.InsertTargetFloorInDirectionOrder(closestElevator, pending.Floor);
+
                 closestElevator.Direction = Direction.Down;
                 pending.AssignedElevatorId = closestElevator.Id;
                 pending.Status = HallRequestStatus.Assigned;
