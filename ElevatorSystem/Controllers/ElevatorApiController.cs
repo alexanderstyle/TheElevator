@@ -39,7 +39,6 @@ public class ElevatorApiController : ControllerBase
     /// <summary>
     /// Handles elevator requests from external clients (Simulation System).
     /// </summary>
-    [Obsolete("Manual request via this api will be removed in future versions. Use auto-generated requests using background services.")]
     [HttpPost]
     [Route("request")]
     public async Task<IActionResult> RequestElevator([FromBody] HallRequest request)
