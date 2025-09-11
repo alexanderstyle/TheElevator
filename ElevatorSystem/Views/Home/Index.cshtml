@@ -72,23 +72,4 @@
 </table>
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        function updateDashboard() {
-            $.ajax({
-                url: '/api/elevator/status',
-                method: 'GET',
-                success: function (data) {
-                    console.log('Dashboard updated', data);
-
-                    // TODO: Update the table based on the returned data.
-
-                }
-            });
-        }
-
-        $(document).ready(function () {
-            updateDashboard(); // Initial load
-            setInterval(updateDashboard, 5000); // Poll every 5 seconds
-        });
-    </script>
 }
