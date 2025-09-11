@@ -180,7 +180,7 @@ public class ElevatorManager
 
         // Do we have an elevator that is below the lowest up requests floor that can service the pending requests?
         var elevatorCandidates = _elevators
-            .Where(e => (e.CurrentFloor < lowestFloorRequest && e.Direction == Direction.Up) || (e.CurrentFloor < lowestFloorRequest && e.IsIdle))
+            .Where(e => (e.CurrentFloor <= lowestFloorRequest && e.Direction == Direction.Up) || (e.CurrentFloor <= lowestFloorRequest && e.IsIdle))
             .OrderBy(e => e.Id)
             .ToList();
 
@@ -194,12 +194,12 @@ public class ElevatorManager
 
         foreach (var elevator in elevatorCandidates)
         {
-            if (lowestFloorRequest > elevator.CurrentFloor)
+            if (lowestFloorRequest >= elevator.CurrentFloor)
             {
                 var elevatorDistance = lowestFloorRequest - elevator.CurrentFloor;
 
                 // Elevator is closer 
-                if (elevatorDistance < lowestDistance)
+                if (elevatorDistance <= lowestDistance)
                 {
                     lowestDistance = elevatorDistance;
 
