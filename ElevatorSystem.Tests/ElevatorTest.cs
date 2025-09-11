@@ -230,4 +230,39 @@ public class ElevatorTest
         Assert.Contains(5, manager.GetElevators().First().TargetFloors); // still going to 5
         Assert.Equal(new List<int> { 5, 6, 7 }, manager.GetElevators().First().TargetFloors); // No change targets
     }
+
+    [Fact]
+    public async Task StepAsyncShouldMoveElevatorMoreFloorsTowardTarget()
+    {
+        // Arrange
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
+
+        // Remove delay in onloading during tests.
+        manager.OnloadingDelayInSeconds = 0;
+
+        await manager.ReceiveRequestAsync(new HallRequest(5, Direction.Up));
+        await manager.ReceiveRequestAsync(new HallRequest(6, Direction.Up));
+        await manager.ReceiveRequestAsync(new HallRequest(7, Direction.Up));
+
+        manager.SetElevatorState(1, 1, null);
+        manager.SetElevatorState(2, 1, null);
+        manager.SetElevatorState(3, 1, null);
+        manager.SetElevatorState(4, 1, null);
+
+        await manager.AssignRequestAsync();
+
+        // Act 
+        await manager.StepAsync(); // At floor 1 before at floor 2 after step.
+        await manager.StepAsync();
+        await manager.StepAsync();
+        await manager.StepAsync();
+        await manager.StepAsync();
+
+        // Assert
+        // First elevator should be assigned.
+        Assert.Equal(1, manager.GetElevators().First().Id);
+        Assert.Equal(5, manager.GetElevators().First().CurrentFloor);
+        Assert.Contains(6, manager.GetElevators().First().TargetFloors); // still going to 5
+        Assert.Equal(new List<int> { 6, 7 }, manager.GetElevators().First().TargetFloors); // No change targets
+    }
 }
