@@ -343,7 +343,6 @@ public class ElevatorTest
         await manager.StepAsync();
         await manager.StepAsync();
         await manager.StepAsync();
-        //await manager.StepAsync();
 
         // Assert
         // Fourth elevator should be assigned.
