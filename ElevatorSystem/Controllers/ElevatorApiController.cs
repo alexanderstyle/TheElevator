@@ -39,11 +39,11 @@ public class ElevatorApiController : ControllerBase
     /// <summary>
     /// Handles elevator requests from external clients (Simulation System).
     /// </summary>
-    [Obsolete("Manual request via this api will be removed in future versions. Use auto-generated requests using background services.")]
     [HttpPost]
     [Route("request")]
     public async Task<IActionResult> RequestElevator([FromBody] HallRequest request)
     {
+        //await _manager.ReceiveRequestAsync(new HallRequest(floor, direction == 0 ? Direction.Up : Direction.Down));
         await _manager.ReceiveRequestAsync(request);
 
         return Ok(new { message = "Api elevator request received" });

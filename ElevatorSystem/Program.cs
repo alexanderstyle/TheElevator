@@ -1,4 +1,5 @@
 using ElevatorSystem.Services;
+using System.Text.Json.Serialization;
 
 namespace ElevatorSystem;
 
@@ -18,7 +19,11 @@ public class Program
         });
 
         // Add services to the container.
-        builder.Services.AddControllersWithViews();
+        builder.Services.AddControllersWithViews()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
 
         builder.Services.AddSingleton<ElevatorManager>();
 
@@ -29,7 +34,7 @@ public class Program
         builder.Services.AddHostedService<ElevatorStepSimulator>();
 
         // We need a background service to run our simulated elevator requests from along the hall.
-        builder.Services.AddHostedService<ElevatorHallRequestSimulator>();
+        //builder.Services.AddHostedService<ElevatorHallRequestSimulator>();
 
         var app = builder.Build();
 
