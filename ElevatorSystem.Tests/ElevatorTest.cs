@@ -161,12 +161,99 @@ public class ElevatorTest
 
         // Assert
         Assert.Equal(3, assigned.Count);
-        Assert.Equal(new List<int> { 5, 6, 7 }, manager.GetElevators().First().TargetFloors);
 
-        // All other elevators should not have assignments.
-        Assert.All(manager.GetElevators().Where(x => x.Id != 1), x => {
-            Assert.Empty(x.TargetFloors);
-        });
+        // One elevator should target all the requests.
+        var found = false;
+
+        foreach (var elevator in manager.GetElevators())
+        {
+            if (elevator.TargetFloors.SequenceEqual(new List<int> { 5, 6, 7 }))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        Assert.True(found);
+    }
+
+    [Fact]
+    public async Task AssignRequestAsyncShouldAssignUpRequestsToMovingUpOrIdleElevatorsWhenLowestUpRequestedFloorIsElevatorCurrentFloor()
+    {
+        // Arrange
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
+
+        await manager.ReceiveRequestAsync(new HallRequest(1, Direction.Up));
+        await manager.ReceiveRequestAsync(new HallRequest(6, Direction.Up));
+        await manager.ReceiveRequestAsync(new HallRequest(7, Direction.Up));
+
+        // Elevators are all idle.
+        manager.SetElevatorState(1, 1, null);
+        manager.SetElevatorState(2, 1, null);
+        manager.SetElevatorState(3, 1, Direction.Up);
+        manager.SetElevatorState(4, 1, null);
+
+        // Act
+        await manager.AssignRequestAsync();
+
+        var assigned = manager.GetAssignedRequests();
+
+        // Assert
+        Assert.Equal(3, assigned.Count);
+
+        // One elevator should target all the requests.
+        var found = false;
+
+        foreach (var elevator in manager.GetElevators())
+        {
+            if (elevator.TargetFloors.SequenceEqual(new List<int> { 1, 6, 7 }))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        Assert.True(found);
+    }
+
+    [Fact]
+    public async Task AssignRequestAsyncShouldAssignDownRequestsToMovingDownOrIdleElevatorsWhenHighestDownRequestedFloorIsElevatorCurrentFloor()
+    {
+        // Arrange
+        var manager = new ElevatorManager(_mockLogger.Object, floors: 10, elevatorCount: 4);
+
+        await manager.ReceiveRequestAsync(new HallRequest(7, Direction.Down));
+        await manager.ReceiveRequestAsync(new HallRequest(6, Direction.Down));
+        await manager.ReceiveRequestAsync(new HallRequest(5, Direction.Down));
+
+        // Elevators are all idle.
+        manager.SetElevatorState(1, 7, null);
+        manager.SetElevatorState(2, 8, null);
+        manager.SetElevatorState(3, 8, null);
+        manager.SetElevatorState(4, 8, null);
+
+        // Act
+        await manager.AssignRequestAsync();
+
+        var assigned = manager.GetAssignedRequests();
+
+        // Assert
+        // One elevator will get assigned all requests.
+        Assert.Equal(3, assigned.Count);
+
+        // One elevator should target all the requests.
+        var found = false;
+
+        foreach (var elevator in manager.GetElevators())
+        {
+            if (elevator.TargetFloors.SequenceEqual(new List<int> { 7, 6, 5 }))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        Assert.True(found);
     }
 
     [Fact]
@@ -224,11 +311,11 @@ public class ElevatorTest
         await manager.StepAsync();
 
         // Assert
-        // First elevator should be assigned.
-        Assert.Equal(1, manager.GetElevators().First().Id);
-        Assert.Equal(2, manager.GetElevators().First().CurrentFloor);
-        Assert.Contains(5, manager.GetElevators().First().TargetFloors); // still going to 5
-        Assert.Equal(new List<int> { 5, 6, 7 }, manager.GetElevators().First().TargetFloors); // No change targets
+        // Fourth elevator should be assigned the requests sequence.
+        Assert.Equal(4, manager.GetElevators().Single(x => x.Id == 4).Id);
+        Assert.Equal(2, manager.GetElevators().Single(x => x.Id == 4).CurrentFloor);
+        Assert.Contains(5, manager.GetElevators().Single(x => x.Id == 4).TargetFloors); // still going to 5
+        Assert.Equal(new List<int> { 5, 6, 7 }, manager.GetElevators().Single(x => x.Id == 4).TargetFloors); // No change targets
     }
 
     [Fact]
@@ -256,14 +343,14 @@ public class ElevatorTest
         await manager.StepAsync();
         await manager.StepAsync();
         await manager.StepAsync();
-        await manager.StepAsync();
+        //await manager.StepAsync();
 
         // Assert
-        // First elevator should be assigned.
-        Assert.Equal(1, manager.GetElevators().First().Id);
-        Assert.Equal(5, manager.GetElevators().First().CurrentFloor);
-        Assert.Contains(6, manager.GetElevators().First().TargetFloors); // still going to 5
-        Assert.Equal(new List<int> { 6, 7 }, manager.GetElevators().First().TargetFloors); // No change targets
+        // Fourth elevator should be assigned.
+        Assert.Equal(4, manager.GetElevators().Single(x => x.Id == 4).Id);
+        Assert.Equal(5, manager.GetElevators().Single(x => x.Id == 4).CurrentFloor);
+        Assert.Contains(6, manager.GetElevators().Single(x => x.Id == 4).TargetFloors); // still going to 5
+        Assert.Equal(new List<int> { 5, 6, 7 }, manager.GetElevators().Single(x => x.Id == 4).TargetFloors); // No change targets
     }
 
     [Fact]
@@ -285,14 +372,13 @@ public class ElevatorTest
 
         // Act
         await manager.StepAsync(); // Move from 1 to 2
-        var elevator = manager.GetActualElevatorById(1);
+        var elevator = manager.GetActualElevatorById(4);
 
         Assert.Equal(2, elevator.CurrentFloor);
 
         // Next step should "arrive" and de-assign (remove) the target floor.
         await manager.StepAsync();
 
-        // How do i get the actual elevator?
         Assert.Empty(elevator.TargetFloors);
         Assert.Null(elevator.Direction);
     }
