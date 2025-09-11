@@ -9,7 +9,6 @@ public class HallRequest
 
     public HallRequest()
     {
-
     }
 
     public HallRequest(int Floor, Direction Direction) 
