@@ -34,7 +34,7 @@ public class Program
         builder.Services.AddHostedService<ElevatorStepSimulator>();
 
         // We need a background service to run our simulated elevator requests from along the hall.
-        //builder.Services.AddHostedService<ElevatorHallRequestSimulator>();
+        builder.Services.AddHostedService<ElevatorHallRequestSimulator>();
 
         var app = builder.Build();
 
